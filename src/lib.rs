@@ -1,3 +1,5 @@
+//! Data types, structures, and algorithms for 3D integer lattices (voxels)
+
 mod extent;
 mod lattice;
 mod normal;
