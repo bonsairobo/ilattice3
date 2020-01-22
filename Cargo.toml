@@ -1,0 +1,14 @@
+[package]
+name = "ilattice3"
+version = "0.1.0"
+authors = ["Duncan Fairbanks <fduncan@umich.edu>"]
+edition = "2018"
+
+description = "Data types, structures, and algorithms for 3D integer lattices (voxels)"
+
+[dependencies]
+enum-primitive-derive = "*"
+itertools = "*"
+num = "*"
+num-traits = "*"
+serde = { version = "*", features = ["derive"] }
