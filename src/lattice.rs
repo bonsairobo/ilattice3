@@ -27,7 +27,7 @@ pub struct Lattice<T, I = YLevelsIndexer> {
     values: Vec<T>,
 }
 
-impl<T: Copy> Lattice<T> {
+impl<T: Clone> Lattice<T> {
     pub fn fill(extent: Extent, init_val: T) -> Self {
         Lattice {
             extent,
@@ -38,18 +38,18 @@ impl<T: Copy> Lattice<T> {
 
     pub fn fill_extent(&mut self, extent: &Extent, val: T) {
         for p in extent {
-            *self.get_mut_world(&p) = val;
+            *self.get_mut_world(&p) = val.clone();
         }
     }
 
     pub fn copy_extent(src: &Self, dst: &mut Self, extent: &Extent) {
         for p in extent {
-            *dst.get_mut_world(&p) = *src.get_world(&p);
+            *dst.get_mut_world(&p) = src.get_world(&p).clone();
         }
     }
 }
 
-impl<T: Copy + Default> Lattice<T> {
+impl<T: Clone + Default> Lattice<T> {
     pub fn copy_extent_into_new_lattice(&self, extent: &Extent) -> Self {
         let mut copy = Lattice::fill(*extent, T::default());
         Self::copy_extent(self, &mut copy, extent);
@@ -231,14 +231,14 @@ impl<'a, T> Iterator for ChunkKeyIterator<'a, T> {
     }
 }
 
-impl<T: Copy + Default> ChunkedLattice<T> {
+impl<T: Clone + Default> ChunkedLattice<T> {
     pub fn copy_lattice_into_chunks(&mut self, lattice: &Lattice<T>, fill_default: T) {
         for key in self.key_extent(&lattice.get_extent()) {
             let chunk_extent = self.extent_for_chunk_key(&key);
             let chunk = self
                 .map
                 .entry(key)
-                .or_insert_with(|| Lattice::fill(chunk_extent, fill_default));
+                .or_insert_with(|| Lattice::fill(chunk_extent, fill_default.clone()));
             Lattice::copy_extent(
                 lattice,
                 chunk,
@@ -273,13 +273,13 @@ pub struct LatticeKeyValIterator<'a, T> {
     extent_iter: ExtentIterator,
 }
 
-impl<'a, T: Copy> Iterator for LatticeKeyValIterator<'a, T> {
+impl<'a, T: Clone> Iterator for LatticeKeyValIterator<'a, T> {
     type Item = (Point, T);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.extent_iter
             .next()
-            .map(|p| (p, *self.lattice.get_world(&p)))
+            .map(|p| (p, self.lattice.get_world(&p).clone()))
     }
 }
 
@@ -294,7 +294,7 @@ where
 
 impl<'a, T, I> ChunkedLatticeIterator<'a, T, I>
 where
-    T: Copy,
+    T: Clone,
     I: Iterator<Item = &'a Lattice<T>>,
 {
     fn move_to_next_lattice(&mut self) {
@@ -311,7 +311,7 @@ where
 
 impl<'a, T, I> Iterator for ChunkedLatticeIterator<'a, T, I>
 where
-    T: Copy,
+    T: Clone,
     I: Iterator<Item = &'a Lattice<T>>,
 {
     type Item = (Point, T);
