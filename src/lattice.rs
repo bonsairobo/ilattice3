@@ -72,6 +72,13 @@ impl<T> Lattice<T> {
 
         Self::new(extent, values)
     }
+
+    pub fn map<F>(&self, f: F) -> Self
+    where
+        F: Fn(&T) -> T
+    {
+        Lattice::new(self.get_extent(), self.values.iter().map(f).collect())
+    }
 }
 
 impl<T, I: LatticeIndexer> Lattice<T, I> {
