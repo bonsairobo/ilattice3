@@ -73,9 +73,9 @@ impl<T> Lattice<T> {
         Self::new(extent, values)
     }
 
-    pub fn map<F>(&self, f: F) -> Self
+    pub fn map<F, S>(&self, f: F) -> Lattice<S>
     where
-        F: Fn(&T) -> T
+        F: Fn(&T) -> S
     {
         Lattice::new(self.get_extent(), self.values.iter().map(f).collect())
     }
