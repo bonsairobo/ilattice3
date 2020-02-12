@@ -3,6 +3,7 @@ use crate::{
     Point,
 };
 
+use dot_vox::*;
 use std::collections::{hash_map, HashMap};
 
 pub trait LatticeIndexer {
@@ -78,6 +79,27 @@ impl<T> Lattice<T> {
         F: Fn(&T) -> S
     {
         Lattice::new(self.get_extent(), self.values.iter().map(f).collect())
+    }
+}
+
+impl Lattice<u32> {
+    pub fn from_vox(data: &DotVoxData, model_index: usize) -> Self {
+        let DotVoxData {
+            models,
+            palette,
+            ..
+        } = data;
+
+        let Model { size: Size { x, y, z }, voxels } = &models[model_index];
+        let size = Point::new(*x as i32, *y as i32, *z as i32);
+        let extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), size);
+        let mut lattice = Lattice::fill(extent, 0);
+        for Voxel { x, y, z, i } in voxels.into_iter() {
+            let point = [*x as i32, *y as i32, *z as i32].into();
+            *lattice.get_mut_local(&point) = palette[*i as usize];
+        }
+
+        lattice
     }
 }
 
