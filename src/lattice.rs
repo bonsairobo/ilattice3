@@ -43,6 +43,15 @@ impl<T: Clone> Lattice<T> {
         }
     }
 
+    pub fn serialize_extent(&self, extent: &Extent) -> Vec<T> {
+        let mut data = Vec::with_capacity(extent.volume());
+        for p in extent {
+            data.push(self.get_world(&p).clone());
+        }
+
+        data
+    }
+
     pub fn copy_extent(src: &Self, dst: &mut Self, extent: &Extent) {
         for p in extent {
             *dst.get_mut_world(&p) = src.get_world(&p).clone();
