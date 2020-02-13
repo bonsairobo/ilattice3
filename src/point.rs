@@ -25,6 +25,12 @@ impl From<Point> for [f32; 3] {
     }
 }
 
+impl From<Point> for [i32; 3] {
+    fn from(p: Point) -> [i32; 3] {
+        [p.x, p.y, p.z]
+    }
+}
+
 impl From<[i32; 3]> for Point {
     fn from(other: [i32; 3]) -> Self {
         Point::new(other[0], other[1], other[2])
