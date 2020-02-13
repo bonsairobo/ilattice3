@@ -136,10 +136,14 @@ impl Extent {
         ret.add_to_supremum(&(positive - negative))
     }
 
-    pub fn padded(&self, pad: u32) -> Self {
-        let pad = pad as i32;
+    pub fn radial_grow(&self, r: i32) -> Self {
+        let grower = DirectionIndex::new([r; 6]);
 
-        (*self - [pad; 3].into()).add_to_supremum(&[2 * pad; 3].into())
+        self.directional_grow(&grower)
+    }
+
+    pub fn padded(&self, pad: u32) -> Self {
+        self.radial_grow(pad as i32)
     }
 
     /// Number of lattice points in the extent.
