@@ -52,10 +52,17 @@ impl<T: Clone> Lattice<T> {
         data
     }
 
-    pub fn copy_extent(src: &Self, dst: &mut Self, extent: &Extent) {
+    pub fn copy_extent_to_position(
+        src: &Self, dst: &mut Self, dst_position: &Point, extent: &Extent
+    ) {
         for p in extent {
-            *dst.get_mut_world(&p) = src.get_world(&p).clone();
+            let p_dst = *dst_position + p;
+            *dst.get_mut_world(&p_dst) = src.get_world(&p).clone();
         }
+    }
+
+    pub fn copy_extent(src: &Self, dst: &mut Self, extent: &Extent) {
+        Self::copy_extent_to_position(src, dst, &extent.get_minimum(), extent)
     }
 }
 
