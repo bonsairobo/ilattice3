@@ -56,7 +56,7 @@ impl<T: Clone> Lattice<T> {
         src: &Self, dst: &mut Self, dst_position: &Point, extent: &Extent
     ) {
         for p in extent {
-            let p_dst = *dst_position + p;
+            let p_dst = *dst_position + p - extent.get_minimum();
             *dst.get_mut_world(&p_dst) = src.get_world(&p).clone();
         }
     }
