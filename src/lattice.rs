@@ -6,6 +6,8 @@ use crate::{
 use dot_vox::*;
 use std::collections::{hash_map, HashMap};
 
+pub trait PeriodicLatticeIndexer: LatticeIndexer {}
+
 pub trait LatticeIndexer {
     /// `s` is the local strict supremum of an extent. `p` is a local point.
     fn index_from_local_point(s: &Point, p: &Point) -> usize;
@@ -24,11 +26,13 @@ impl LatticeIndexer for YLevelsIndexer {
 #[derive(Clone, Copy, Debug)]
 pub struct PeriodicYLevelsIndexer;
 
+impl PeriodicLatticeIndexer for PeriodicYLevelsIndexer {}
+
 impl LatticeIndexer for PeriodicYLevelsIndexer {
     fn index_from_local_point(s: &Point, p: &Point) -> usize {
-        let px = p.x % s.x;
-        let py = p.y % s.y;
-        let pz = p.z % s.z;
+        let px = p.x.rem_euclid(s.x);
+        let py = p.y.rem_euclid(s.y);
+        let pz = p.z.rem_euclid(s.z);
 
         (py * s.x * s.z + pz * s.x + px) as usize
     }
@@ -411,6 +415,25 @@ where
 mod tests {
     use super::*;
     use crate::test_util::assert_elements_eq;
+
+    #[test]
+    fn test_periodic_indexer() {
+        let extent = Extent::from_min_and_local_supremum([-1, -1, -1].into(), [3, 3, 3].into());
+        let mut lattice = Lattice::fill_with_indexer(PeriodicYLevelsIndexer {}, extent, (0, 0, 0));
+        for p in &extent {
+            *lattice.get_mut_world(&p) = (p.x, p.y, p.z);
+        }
+
+        assert_eq!(*lattice.get_world(&[-1, -1, -1].into()), (-1, -1, -1));
+
+        assert_eq!(*lattice.get_world(&[-2, -1, -1].into()), (1, -1, -1));
+        assert_eq!(*lattice.get_world(&[-1, -2, -1].into()), (-1, 1, -1));
+        assert_eq!(*lattice.get_world(&[-1, -1, -2].into()), (-1, -1, 1));
+
+        assert_eq!(*lattice.get_world(&[-3, -1, -1].into()), (0, -1, -1));
+        assert_eq!(*lattice.get_world(&[-1, -3, -1].into()), (-1, 0, -1));
+        assert_eq!(*lattice.get_world(&[-1, -1, -3].into()), (-1, -1, 0));
+    }
 
     #[test]
     fn test_chunked_lattice_iterator() {
