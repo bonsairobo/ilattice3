@@ -11,7 +11,7 @@ pub trait LatticeIndexer {
     fn index_from_local_point(s: &Point, p: &Point) -> usize;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct YLevelsIndexer;
 
 impl LatticeIndexer for YLevelsIndexer {
@@ -21,7 +21,7 @@ impl LatticeIndexer for YLevelsIndexer {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct PeriodicYLevelsIndexer;
 
 impl LatticeIndexer for PeriodicYLevelsIndexer {
