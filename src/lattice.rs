@@ -49,18 +49,6 @@ impl<T: Clone, I: LatticeIndexer> Lattice<T, I> {
             values: vec![init_val; extent.volume()],
         }
     }
-}
-
-impl<T: Clone> Lattice<T> {
-    pub fn fill(extent: Extent, init_val: T) -> Self {
-        Self::fill_with_indexer(YLevelsIndexer {}, extent, init_val)
-    }
-
-    pub fn fill_extent(&mut self, extent: &Extent, val: T) {
-        for p in extent {
-            *self.get_mut_world(&p) = val.clone();
-        }
-    }
 
     pub fn serialize_extent(&self, extent: &Extent) -> Vec<T> {
         let mut data = Vec::with_capacity(extent.volume());
@@ -69,6 +57,12 @@ impl<T: Clone> Lattice<T> {
         }
 
         data
+    }
+
+    pub fn fill_extent(&mut self, extent: &Extent, val: T) {
+        for p in extent {
+            *self.get_mut_world(&p) = val.clone();
+        }
     }
 
     pub fn copy_extent_to_position(
@@ -82,6 +76,12 @@ impl<T: Clone> Lattice<T> {
 
     pub fn copy_extent(src: &Self, dst: &mut Self, extent: &Extent) {
         Self::copy_extent_to_position(src, dst, &extent.get_minimum(), extent)
+    }
+}
+
+impl<T: Clone> Lattice<T> {
+    pub fn fill(extent: Extent, init_val: T) -> Self {
+        Self::fill_with_indexer(YLevelsIndexer {}, extent, init_val)
     }
 }
 
