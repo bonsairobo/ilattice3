@@ -124,20 +124,19 @@ impl<T> Lattice<T> {
     }
 }
 
-impl Lattice<u32> {
-    pub fn from_vox(data: &DotVoxData, model_index: usize) -> Self {
+impl<I: LatticeIndexer> Lattice<u32, I> {
+    pub fn from_vox_with_indexer(indexer: I, data: &DotVoxData, model_index: usize) -> Self {
         let DotVoxData {
-            models, palette, ..
+            models,
+            palette,
+            ..
         } = data;
 
-        let Model {
-            size: Size { x, y, z },
-            voxels,
-        } = &models[model_index];
+        let Model { size: Size { x, y, z }, voxels } = &models[model_index];
         let size = Point::new(*x as i32, *y as i32, *z as i32);
         let extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), size);
-        let mut lattice = Lattice::fill(extent, 0);
-        for Voxel { x, y, z, i } in voxels.iter() {
+        let mut lattice = Lattice::fill_with_indexer(indexer, extent, 0);
+        for Voxel { x, y, z, i } in voxels.into_iter() {
             let point = [*x as i32, *y as i32, *z as i32].into();
             *lattice.get_mut_local(&point) = palette[*i as usize];
         }
