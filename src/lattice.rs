@@ -36,8 +36,8 @@ impl LatticeIndexer for PeriodicYLevelsIndexer {
 
 #[derive(Clone, Debug)]
 pub struct Lattice<T, I = YLevelsIndexer> {
+    pub indexer: I,
     extent: Extent,
-    indexer: I,
     values: Vec<T>,
 }
 
