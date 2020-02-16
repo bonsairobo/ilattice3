@@ -5,8 +5,8 @@ use std::ops::{Add, Sub};
 /// A Cartesian product of 3 integer ranges: `[x_min..x_max] * [y_min..y_max] * [z_min..z_max]`.
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Extent {
-    /// Point in the extent that's lesser than or equal to all other points in the extent. In world
-    /// coordinates, since the local minimum is always (0, 0, 0).
+    /// Point in the extent that's lesser than all other points in the extent. In world coordinates,
+    /// since the local minimum is always (0, 0, 0).
     minimum: Point,
 
     /// A strict supremum is the least point that's strictly greater than all points in the extent.
@@ -116,6 +116,7 @@ impl Extent {
         &self.world_sup
     }
 
+    /// Translates the entire extent such that `min` is the new minimum.
     pub fn set_minimum(&self, min: Point) -> Self {
         Extent::from_min_and_local_supremum(min, self.local_sup)
     }
@@ -125,7 +126,8 @@ impl Extent {
     }
 
     /// Grows the extent in each of the directions. Positive values grow in the corresponding
-    /// direction. Negative values shrink in that direction.
+    /// direction. Negative values shrink in that direction. Behavior is undefined if the extent
+    /// shrinks to be "inside out."
     pub fn directional_grow(&self, grower: &DirectionIndex<i32>) -> Self {
         let positive = grower.positive_point();
         let negative = grower.negative_point();
@@ -148,9 +150,8 @@ impl Extent {
 
     /// Number of lattice points in the extent.
     pub fn volume(&self) -> usize {
-        // TODO: this comment seems fishy, maybe think of a validation tactic
-        // Sometimes weird algorithms can create negative local supremum coordinates, but they
-        // can just throw away the empty ones.
+        // It's possible for the size of the extent to be negative, but we don't want to return
+        // a negative volume.
         (self.local_sup.x.max(0) * self.local_sup.y.max(0) * self.local_sup.z.max(0)) as usize
     }
 
@@ -188,11 +189,11 @@ impl Extent {
     /// Returns a set of disjoint extents making up the full set of boundary points.
     pub fn get_boundary_extents(&self) -> Vec<Self> {
         let base_area = self.local_sup.x * self.local_sup.y;
-        if base_area == 1 {
-            return vec![*self];
-        }
         if base_area * self.local_sup.z == 0 {
             return vec![];
+        }
+        if base_area == 1 {
+            return vec![*self];
         }
 
         let min = self.minimum;

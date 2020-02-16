@@ -137,7 +137,7 @@ impl Lattice<u32> {
         let size = Point::new(*x as i32, *y as i32, *z as i32);
         let extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), size);
         let mut lattice = Lattice::fill(extent, 0);
-        for Voxel { x, y, z, i } in voxels.into_iter() {
+        for Voxel { x, y, z, i } in voxels.iter() {
             let point = [*x as i32, *y as i32, *z as i32].into();
             *lattice.get_mut_local(&point) = palette[*i as usize];
         }
