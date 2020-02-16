@@ -70,7 +70,10 @@ impl<T: Clone, I: LatticeIndexer> Lattice<T, I> {
     }
 
     pub fn copy_extent_to_position(
-        src: &Self, dst: &mut Self, dst_position: &Point, extent: &Extent
+        src: &Self,
+        dst: &mut Self,
+        dst_position: &Point,
+        extent: &Extent,
     ) {
         for p in extent {
             let p_dst = *dst_position + p - extent.get_minimum();
@@ -115,7 +118,7 @@ impl<T> Lattice<T> {
 
     pub fn map<F, S>(&self, f: F) -> Lattice<S>
     where
-        F: Fn(&T) -> S
+        F: Fn(&T) -> S,
     {
         Lattice::new(self.get_extent(), self.values.iter().map(f).collect())
     }
@@ -124,12 +127,13 @@ impl<T> Lattice<T> {
 impl Lattice<u32> {
     pub fn from_vox(data: &DotVoxData, model_index: usize) -> Self {
         let DotVoxData {
-            models,
-            palette,
-            ..
+            models, palette, ..
         } = data;
 
-        let Model { size: Size { x, y, z }, voxels } = &models[model_index];
+        let Model {
+            size: Size { x, y, z },
+            voxels,
+        } = &models[model_index];
         let size = Point::new(*x as i32, *y as i32, *z as i32);
         let extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), size);
         let mut lattice = Lattice::fill(extent, 0);

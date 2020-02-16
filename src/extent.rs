@@ -2,18 +2,18 @@ use crate::{DirectionIndex, Point};
 
 use std::ops::{Add, Sub};
 
-/// The cartesian product of an integer range in each of 3 dimensions.
+/// A Cartesian product of 3 integer ranges: `[x_min..x_max] * [y_min..y_max] * [z_min..z_max]`.
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Extent {
-    /// Point in the extent that's lesser than all other points in the extent. In world coordinates,
-    /// since local minimum is always (0, 0, 0).
+    /// Point in the extent that's lesser than or equal to all other points in the extent. In world
+    /// coordinates, since the local minimum is always (0, 0, 0).
     minimum: Point,
 
     /// A strict supremum is the least point that's strictly greater than all points in the extent.
     world_sup: Point,
 
     /// By "local," we mean relative to the minimum, so the local strict supremum effectively
-    /// encodes the dimensions of the extent.
+    /// encodes the size of the extent.
     local_sup: Point,
 }
 
