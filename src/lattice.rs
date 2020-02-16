@@ -41,13 +41,19 @@ pub struct Lattice<T, I = YLevelsIndexer> {
     values: Vec<T>,
 }
 
-impl<T: Clone> Lattice<T> {
-    pub fn fill(extent: Extent, init_val: T) -> Self {
+impl<T: Clone, I: LatticeIndexer> Lattice<T, I> {
+    pub fn fill_with_indexer(indexer: I, extent: Extent, init_val: T) -> Self {
         Lattice {
             extent,
-            indexer: YLevelsIndexer {},
+            indexer,
             values: vec![init_val; extent.volume()],
         }
+    }
+}
+
+impl<T: Clone> Lattice<T> {
+    pub fn fill(extent: Extent, init_val: T) -> Self {
+        Self::fill_with_indexer(YLevelsIndexer {}, extent, init_val)
     }
 
     pub fn fill_extent(&mut self, extent: &Extent, val: T) {
