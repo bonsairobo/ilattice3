@@ -22,6 +22,19 @@ impl LatticeIndexer for YLevelsIndexer {
 }
 
 #[derive(Clone, Debug)]
+pub struct PeriodicYLevelsIndexer;
+
+impl LatticeIndexer for PeriodicYLevelsIndexer {
+    fn index_from_local_point(s: &Point, p: &Point) -> usize {
+        let px = p.x % s.x;
+        let py = p.y % s.y;
+        let pz = p.z % s.z;
+
+        (py * s.x * s.z + pz * s.x + px) as usize
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct Lattice<T, I = YLevelsIndexer> {
     extent: Extent,
     indexer: I,
