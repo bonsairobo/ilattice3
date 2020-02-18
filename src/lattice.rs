@@ -162,6 +162,10 @@ impl<T, I: LatticeIndexer> Lattice<T, I> {
         &self.values[index]
     }
 
+    pub fn get_mut_linear(&mut self, index: usize) -> &mut T {
+        &mut self.values[index]
+    }
+
     pub fn index_from_local_point(&self, p: &Point) -> usize {
         let local_sup = self.extent.get_local_supremum();
 
