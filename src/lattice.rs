@@ -11,6 +11,9 @@ pub trait PeriodicLatticeIndexer: LatticeIndexer {}
 pub trait LatticeIndexer {
     /// `s` is the local strict supremum of an extent. `p` is a local point.
     fn index_from_local_point(s: &Point, p: &Point) -> usize;
+
+    /// `s` is the local strict supremum of an extent. `index` is a linear index.
+    fn local_point_from_index(s: &Point, index: usize) -> Point;
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -20,6 +23,19 @@ impl LatticeIndexer for YLevelsIndexer {
     fn index_from_local_point(s: &Point, p: &Point) -> usize {
         // This scheme is chosen for ease of hand-crafting voxel maps.
         (p.y * s.x * s.z + p.z * s.x + p.x) as usize
+    }
+
+    fn local_point_from_index(s: &Point, index: usize) -> Point {
+        assert!(index <= std::i32::MAX as usize);
+        let index = index as i32;
+        let xz_area = s.x * s.z;
+        let y = index / xz_area;
+        let rem = index - y * xz_area;
+        let z = rem / s.x;
+        let rem = rem - z * s.x;
+        let x = rem;
+
+        Point::new(x, y, z)
     }
 }
 
@@ -36,10 +52,16 @@ impl LatticeIndexer for PeriodicYLevelsIndexer {
 
         (py * s.x * s.z + pz * s.x + px) as usize
     }
+
+    /// Returns the canonical point which is contained in the extent.
+    fn local_point_from_index(s: &Point, index: usize) -> Point {
+        YLevelsIndexer::local_point_from_index(s, index)
+    }
 }
 
 #[derive(Clone, Debug)]
 pub struct Lattice<T, I = YLevelsIndexer> {
+    // TODO: seems like there is a use for an Extent with LatticeIndexer, but no data
     pub indexer: I,
     extent: Extent,
     values: Vec<T>,
@@ -170,6 +192,12 @@ impl<T, I: LatticeIndexer> Lattice<T, I> {
         let local_sup = self.extent.get_local_supremum();
 
         I::index_from_local_point(&local_sup, p)
+    }
+
+    pub fn local_point_from_index(&self, index: usize) -> Point {
+        let local_sup = self.extent.get_local_supremum();
+
+        I::local_point_from_index(&local_sup, index)
     }
 
     pub fn get_local(&self, p: &Point) -> &T {
@@ -444,6 +472,29 @@ mod tests {
         assert_eq!(*lattice.get_world(&[-3, -1, -1].into()), (0, -1, -1));
         assert_eq!(*lattice.get_world(&[-1, -3, -1].into()), (-1, 0, -1));
         assert_eq!(*lattice.get_world(&[-1, -1, -3].into()), (-1, -1, 0));
+    }
+
+    #[test]
+    fn test_local_point_from_index() {
+        let sup = Point::new(10, 20, 30);
+        let test_points = [
+            Point::new(0, 0, 0),
+            Point::new(1, 1, 1),
+            Point::new(1, 2, 3),
+            Point::new(4, 3, 2),
+            Point::new(9, 9, 10),
+            Point::new(9, 19, 29),
+        ];
+
+        for p in test_points.iter() {
+            assert_eq!(
+                *p,
+                YLevelsIndexer::local_point_from_index(
+                    &sup,
+                    YLevelsIndexer::index_from_local_point(&sup, p)
+                ),
+            );
+        }
     }
 
     #[test]
