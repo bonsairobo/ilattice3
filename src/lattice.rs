@@ -106,6 +106,15 @@ impl<T: Clone, I: LatticeIndexer> Lattice<T, I> {
     pub fn copy_extent(src: &Self, dst: &mut Self, extent: &Extent) {
         Self::copy_extent_to_position(src, dst, &extent.get_minimum(), extent)
     }
+
+    pub fn map_extent<S, F>(src: &Self, dst: &mut Lattice<S, I>, extent: &Extent, f: F)
+    where
+        F: Fn(&T) -> S
+    {
+        for p in extent {
+            *dst.get_mut_world(&p) = f(src.get_world(&p));
+        }
+    }
 }
 
 impl<T: Clone> Lattice<T> {
