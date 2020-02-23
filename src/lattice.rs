@@ -146,6 +146,8 @@ impl<T> Lattice<T> {
     }
 }
 
+// TODO: split the VOX support into a separate crate
+
 impl<I: LatticeIndexer> Into<DotVoxData> for Lattice<VoxColor, I> {
     fn into(self: Self) -> DotVoxData {
         let size = self.extent.get_local_supremum();
