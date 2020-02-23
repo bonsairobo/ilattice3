@@ -102,9 +102,9 @@ impl<T: Clone, I: LatticeIndexer> Lattice<T, I> {
         }
     }
 
-    pub fn copy_extent_to_position(
+    pub fn copy_extent_to_position<J: LatticeIndexer>(
         src: &Self,
-        dst: &mut Self,
+        dst: &mut Lattice<T, J>,
         dst_position: &Point,
         extent: &Extent,
     ) {
@@ -114,7 +114,7 @@ impl<T: Clone, I: LatticeIndexer> Lattice<T, I> {
         }
     }
 
-    pub fn copy_extent(src: &Self, dst: &mut Self, extent: &Extent) {
+    pub fn copy_extent<J: LatticeIndexer>(src: &Self, dst: &mut Lattice<T, J>, extent: &Extent) {
         Self::copy_extent_to_position(src, dst, &extent.get_minimum(), extent)
     }
 
