@@ -6,11 +6,17 @@ edition = "2018"
 
 description = "Data types, structures, and algorithms for 3D integer lattices (voxels)"
 
+[features]
+default = []
+
+vox = ["dot_vox"]
+
 [dependencies]
-# dot_vox = "*"
-dot_vox = { git = "https://github.com/bonsairobo/dot_vox" }
 enum-primitive-derive = "*"
 itertools = "*"
 num = "*"
 num-traits = "*"
 serde = { version = "*", features = ["derive"] }
+
+# dot_vox = "*"
+dot_vox = { git = "https://github.com/bonsairobo/dot_vox", optional = true }
