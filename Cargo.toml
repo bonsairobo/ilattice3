@@ -10,6 +10,7 @@ description = "Data types, structures, and algorithms for 3D integer lattices (v
 default = []
 
 vox = ["dot_vox"]
+img = ["image"]
 
 [dependencies]
 enum-primitive-derive = "*"
@@ -20,3 +21,4 @@ serde = { version = "*", features = ["derive"] }
 
 # dot_vox = "*"
 dot_vox = { git = "https://github.com/bonsairobo/dot_vox", optional = true }
+image = { version = "*", optional = true }

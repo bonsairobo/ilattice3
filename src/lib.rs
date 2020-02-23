@@ -11,6 +11,9 @@ mod vox;
 #[cfg(feature = "vox")]
 pub use vox::{VoxColor, EMPTY_VOX_COLOR};
 
+#[cfg(feature = "image")]
+mod image;
+
 #[cfg(test)]
 mod test_util;
 
