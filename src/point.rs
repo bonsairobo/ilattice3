@@ -131,6 +131,24 @@ impl Point {
     pub fn norm(&self) -> f32 {
         (self.dot(self) as f32).sqrt()
     }
+
+    pub fn div_floor(&self, rhs: &Self) -> Self {
+        [
+            self.x.div_floor(&rhs.x),
+            self.y.div_floor(&rhs.y),
+            self.z.div_floor(&rhs.z),
+        ]
+        .into()
+    }
+
+    pub fn div_ceil(&self, rhs: &Self) -> Self {
+        [
+            self.x.div_ceil(&rhs.x),
+            self.y.div_ceil(&rhs.y),
+            self.z.div_ceil(&rhs.z),
+        ]
+        .into()
+    }
 }
 
 /// This particular partial order allows us to say that a lattice L contains a point iff
@@ -222,11 +240,6 @@ impl Div<Point> for Point {
     type Output = Self;
 
     fn div(self, rhs: Point) -> Self {
-        [
-            self.x.div_floor(&rhs.x),
-            self.y.div_floor(&rhs.y),
-            self.z.div_floor(&rhs.z),
-        ]
-        .into()
+        self.div_floor(&rhs)
     }
 }
