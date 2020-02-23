@@ -11,7 +11,7 @@ mod test_util;
 pub use extent::{bounding_extent, Extent, ExtentIterator};
 pub use lattice::{
     ChunkKeyIterator, ChunkedLattice, ChunkedLatticeIterator, Lattice, LatticeIndexer,
-    LatticeKeyValIterator, PeriodicYLevelsIndexer, VoxColor, YLevelsIndexer,
+    LatticeKeyValIterator, PeriodicYLevelsIndexer, VoxColor, YLevelsIndexer, EMPTY_VOX_COLOR,
 };
 pub use normal::{Direction, DirectionIndex, Normal, PlaneSpanInfo, ALL_DIRECTIONS, ALL_NORMALS};
 pub use point::Point;
