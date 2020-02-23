@@ -16,7 +16,7 @@ pub trait LatticeIndexer {
     fn local_point_from_index(s: &Point, index: usize) -> Point;
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct YLevelsIndexer;
 
 impl LatticeIndexer for YLevelsIndexer {
@@ -39,7 +39,7 @@ impl LatticeIndexer for YLevelsIndexer {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct PeriodicYLevelsIndexer;
 
 impl PeriodicLatticeIndexer for PeriodicYLevelsIndexer {}
@@ -59,7 +59,7 @@ impl LatticeIndexer for PeriodicYLevelsIndexer {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Lattice<T, I = YLevelsIndexer> {
     // TODO: seems like there is a use for an Extent with LatticeIndexer, but no data
     pub indexer: I,
@@ -83,6 +83,17 @@ impl<T: Clone, I: LatticeIndexer> Lattice<T, I> {
         }
 
         data
+    }
+
+    /// TODO: this should just be a call of Lattice::new, but the indexer used may have a different
+    /// point ordering than the extent iterator, so this hack is required
+    pub fn deserialize(extent: &Extent, serial: &[T]) -> Lattice<T> {
+        let mut lattice = Lattice::fill(*extent, serial[0].clone());
+        for (i, p) in extent.into_iter().enumerate() {
+            *lattice.get_mut_world(&p) = serial[i].clone();
+        }
+
+        lattice
     }
 
     pub fn fill_extent(&mut self, extent: &Extent, val: T) {
@@ -539,6 +550,23 @@ mod tests {
                 ),
             );
         }
+    }
+
+    #[test]
+    fn test_serialized_extent_back_to_lattice() {
+        let extent = Extent::from_min_and_local_supremum([-1, -1, -1].into(), [3, 3, 3].into());
+        let mut lattice = Lattice::fill(extent, (0, 0, 0));
+        for p in &extent {
+            *lattice.get_mut_world(&p) = (p.x, p.y, p.z);
+        }
+        let orig_lattice = lattice.clone();
+
+        let serial_extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), [2, 2, 2].into());
+        let serialized = lattice.serialize_extent(&serial_extent);
+        let serial_lattice = Lattice::<_, YLevelsIndexer>::deserialize(&serial_extent, &serialized);
+        Lattice::copy_extent(&serial_lattice, &mut lattice, &serial_extent);
+
+        assert_eq!(orig_lattice, lattice);
     }
 
     #[test]
