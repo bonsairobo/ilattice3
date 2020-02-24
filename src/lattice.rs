@@ -74,13 +74,7 @@ impl<T: Clone, I: Clone + LatticeIndexer> Lattice<T, I> {
         let extent = self.get_extent();
         let volume = extent.volume();
 
-        let corners = extent.get_world_corners();
-        let tfm_corners: Vec<[i32; 3]> = corners.iter().map(|c| tfm.apply(c).into()).collect();
-        let tfm_min: Point = (*tfm_corners.iter().min().unwrap()).into();
-        let tfm_max: Point = (*tfm_corners.iter().max().unwrap()).into();
-
-        let tfm_extent = Extent::from_min_and_world_max(tfm_min, tfm_max);
-        println!("NEW EXTENT = {:?}", tfm_extent);
+        let tfm_extent = tfm.apply_to_extent(&extent);
 
         let mut new_values = Vec::with_capacity(volume);
         unsafe {
@@ -90,8 +84,7 @@ impl<T: Clone, I: Clone + LatticeIndexer> Lattice<T, I> {
 
         // PERF: this is not the most efficient, but it is very simple.
         for p in extent {
-            let tfm_p = tfm.apply(&p);
-            println!("mapping {} --> {}", p, tfm_p);
+            let tfm_p = tfm.apply_to_point(&p);
             *tfm_lattice.get_mut_world(&tfm_p) = self.get_world(&p).clone();
         }
 
@@ -667,5 +660,33 @@ mod tests {
         }
 
         assert_eq!(tfm_lattice, manual_tfm_lattice);
+    }
+
+    #[test]
+    fn test_rotationally_symmetric_lattice_serializes_equivalently() {
+        let orig_extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), [2, 2, 2].into());
+        let bottom_extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), [2, 2, 1].into());
+        let top_extent = Extent::from_min_and_local_supremum([0, 0, 1].into(), [2, 2, 1].into());
+        let mut orig_lattice = Lattice::fill(orig_extent, 0);
+        for p in &bottom_extent {
+            *orig_lattice.get_mut_world(&p) = 1;
+        }
+        for p in &top_extent {
+            *orig_lattice.get_mut_world(&p) = 2;
+        }
+
+        let orig_serial = orig_lattice.serialize_extent(&orig_extent);
+
+        let matrix = [[0, 1, 0], [-1, 0, 0], [0, 0, 1]];
+        let tfm = Transform { matrix };
+
+        // Apply successive rotations and make sure the serialization is always the same.
+        let mut prev_lattice = orig_lattice;
+        for _ in 0..4 {
+            let tfm_lattice = prev_lattice.apply_octahedral_transform(&tfm);
+            let tfm_serial = tfm_lattice.serialize_extent(&tfm_lattice.get_extent());
+            assert_eq!(tfm_serial, orig_serial);
+            prev_lattice = tfm_lattice;
+        }
     }
 }

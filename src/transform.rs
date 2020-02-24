@@ -1,4 +1,4 @@
-use crate::Point;
+use crate::{Extent, Point};
 
 pub const OCTAHEDRAL_GROUP: [[[i32; 3]; 3]; 48] = [
     // Stationary X
@@ -74,7 +74,7 @@ pub struct Transform {
 }
 
 impl Transform {
-    pub fn apply(&self, p: &Point) -> Point {
+    pub fn apply_to_point(&self, p: &Point) -> Point {
         let Transform { matrix } = self;
 
         let x_map: Point = matrix[0].into();
@@ -82,6 +82,16 @@ impl Transform {
         let z_map: Point = matrix[2].into();
 
         Point::new(x_map.dot(p), y_map.dot(p), z_map.dot(p))
+    }
+
+    pub fn apply_to_extent(&self, extent: &Extent) -> Extent {
+        let corners = extent.get_world_corners();
+        let tfm_corners: Vec<[i32; 3]> =
+            corners.iter().map(|c| self.apply_to_point(c).into()).collect();
+        let tfm_min: Point = (*tfm_corners.iter().min().unwrap()).into();
+        let tfm_max: Point = (*tfm_corners.iter().max().unwrap()).into();
+
+        Extent::from_min_and_world_max(tfm_min, tfm_max)
     }
 
     pub fn is_octahedral(&self) -> bool {
