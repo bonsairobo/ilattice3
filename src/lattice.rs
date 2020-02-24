@@ -60,7 +60,6 @@ impl LatticeIndexer for PeriodicYLevelsIndexer {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Lattice<T, I = YLevelsIndexer> {
-    // TODO: seems like there is a use for an Extent with LatticeIndexer, but no data
     pub indexer: I,
     extent: Extent,
     values: Vec<T>,
