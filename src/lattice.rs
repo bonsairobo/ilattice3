@@ -67,8 +67,7 @@ pub struct Lattice<T, I = YLevelsIndexer> {
 }
 
 impl<T: Clone, I: Clone + LatticeIndexer> Lattice<T, I> {
-    /// Map every point by `tfm`. This only works for octahedral transforms, i.e. symmetric ones,
-    /// and this function will assert this in debug mode.
+    /// Map every point by `tfm`. This function will assert `tfm.is_octahedral` in debug mode.
     pub fn apply_octahedral_transform(&self, tfm: &Transform) -> Self {
         debug_assert!(tfm.is_octahedral());
 
