@@ -1,9 +1,12 @@
 //! Data types, structures, and algorithms for 3D integer lattices (voxels)
 
+// TODO: more robust linear algebra and transformations
+
 mod extent;
 mod lattice;
 mod normal;
 mod point;
+mod transform;
 
 #[cfg(feature = "vox")]
 mod vox;
@@ -24,3 +27,4 @@ pub use lattice::{
 };
 pub use normal::{Direction, DirectionIndex, Normal, PlaneSpanInfo, ALL_DIRECTIONS, ALL_NORMALS};
 pub use point::Point;
+pub use transform::{Transform, OCTAHEDRAL_GROUP, Z_STATIONARY_OCTAHEDRAL_GROUP};

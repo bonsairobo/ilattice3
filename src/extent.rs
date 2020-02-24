@@ -186,6 +186,23 @@ impl Extent {
         self.intersection(other) == *self
     }
 
+    /// Get the corner points, i.e. those which are extreme in each dimension.
+    pub fn get_world_corners(&self) -> [Point; 8] {
+        let min = self.get_minimum();
+        let max = self.get_world_max();
+
+        [
+            min,
+            [max.x, min.y, min.z].into(),
+            [min.x, max.y, min.z].into(),
+            [min.x, min.y, max.z].into(),
+            [max.x, max.y, min.z].into(),
+            [max.x, min.y, max.z].into(),
+            [min.x, max.y, max.z].into(),
+            max,
+        ]
+    }
+
     /// Returns a set of disjoint extents making up the full set of boundary points.
     pub fn get_boundary_extents(&self) -> Vec<Self> {
         let base_area = self.local_sup.x * self.local_sup.y;

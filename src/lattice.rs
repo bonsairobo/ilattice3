@@ -1,5 +1,6 @@
 use crate::{
     extent::{bounding_extent, Extent, ExtentIterator},
+    transform::Transform,
     Point,
 };
 
@@ -65,6 +66,40 @@ pub struct Lattice<T, I = YLevelsIndexer> {
     values: Vec<T>,
 }
 
+impl<T: Clone, I: Clone + LatticeIndexer> Lattice<T, I> {
+    /// Map every point by `tfm`. This only works for octahedral transforms, i.e. symmetric ones,
+    /// and this function will assert this in debug mode.
+    pub fn apply_octahedral_transform(&self, tfm: &Transform) -> Self {
+        debug_assert!(tfm.is_octahedral());
+
+        let extent = self.get_extent();
+        let volume = extent.volume();
+
+        let corners = extent.get_world_corners();
+        let tfm_corners: Vec<[i32; 3]> = corners.iter().map(|c| tfm.apply(c).into()).collect();
+        let tfm_min: Point = (*tfm_corners.iter().min().unwrap()).into();
+        let tfm_max: Point = (*tfm_corners.iter().max().unwrap()).into();
+
+        let tfm_extent = Extent::from_min_and_world_max(tfm_min, tfm_max);
+        println!("NEW EXTENT = {:?}", tfm_extent);
+
+        let mut new_values = Vec::with_capacity(volume);
+        unsafe {
+            new_values.set_len(volume);
+        }
+        let mut tfm_lattice = Self::new_with_indexer(tfm_extent, self.indexer.clone(), new_values);
+
+        // PERF: this is not the most efficient, but it is very simple.
+        for p in extent {
+            let tfm_p = tfm.apply(&p);
+            println!("mapping {} --> {}", p, tfm_p);
+            *tfm_lattice.get_mut_world(&tfm_p) = self.get_world(&p).clone();
+        }
+
+        tfm_lattice
+    }
+}
+
 impl<T: Clone, I: LatticeIndexer> Lattice<T, I> {
     pub fn fill_with_indexer(indexer: I, extent: Extent, init_val: T) -> Self {
         Lattice {
@@ -79,10 +114,13 @@ impl<T: Clone, I: LatticeIndexer> Lattice<T, I> {
     pub fn serialize_extent(&self, extent: &Extent) -> Vec<T> {
         let num_elements = extent.volume();
         let mut data = Vec::with_capacity(num_elements);
-        unsafe { data.set_len(num_elements); }
+        unsafe {
+            data.set_len(num_elements);
+        }
         for p in extent {
             let i = I::index_from_local_point(
-                extent.get_local_supremum(), &extent.local_point_from_world_point(&p)
+                extent.get_local_supremum(),
+                &extent.local_point_from_world_point(&p),
             );
             data[i] = self.get_world(&p).clone();
         }
@@ -152,12 +190,18 @@ impl<T> Lattice<T> {
 
         Self::new(extent, values)
     }
+}
 
-    pub fn map<F, S>(&self, f: F) -> Lattice<S>
+impl<T, I: Clone + LatticeIndexer> Lattice<T, I> {
+    pub fn map<F, S>(&self, f: F) -> Lattice<S, I>
     where
         F: Fn(&T) -> S,
     {
-        Lattice::new(self.get_extent(), self.values.iter().map(f).collect())
+        Lattice::new_with_indexer(
+            self.get_extent(),
+            self.indexer.clone(),
+            self.values.iter().map(f).collect(),
+        )
     }
 }
 
@@ -559,5 +603,70 @@ mod tests {
                 ([1, 1, 1].into(), 2),
             ],
         );
+    }
+
+    #[test]
+    fn test_apply_identity() {
+        let matrix = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+        let tfm = Transform { matrix };
+
+        let extent = Extent::from_min_and_local_supremum([-1, -1, -1].into(), [3, 3, 3].into());
+        let mut lattice = Lattice::fill(extent, (0, 0, 0));
+        for p in &extent {
+            *lattice.get_mut_world(&p) = (p.x, p.y, p.z);
+        }
+
+        let orig_lattice = lattice.clone();
+        let tfm_lattice = lattice.apply_octahedral_transform(&tfm);
+
+        assert_eq!(orig_lattice, tfm_lattice);
+    }
+
+    #[test]
+    fn test_apply_x_reflection() {
+        let matrix = [[-1, 0, 0], [0, 1, 0], [0, 0, 1]];
+        let tfm = Transform { matrix };
+
+        let orig_extent =
+            Extent::from_min_and_local_supremum([-2, -2, -2].into(), [3, 3, 3].into());
+        let mut orig_lattice = Lattice::fill(orig_extent, (0, 0, 0));
+        for p in &orig_extent {
+            *orig_lattice.get_mut_world(&p) = (p.x, p.y, p.z);
+        }
+
+        let tfm_lattice = orig_lattice.apply_octahedral_transform(&tfm);
+
+        let manual_tfm_extent =
+            Extent::from_min_and_local_supremum([0, -2, -2].into(), [3, 3, 3].into());
+        let mut manual_tfm_lattice = Lattice::fill(manual_tfm_extent, (0, 0, 0));
+        for p in &manual_tfm_extent {
+            *manual_tfm_lattice.get_mut_world(&p) = (-p.x, p.y, p.z);
+        }
+
+        assert_eq!(tfm_lattice, manual_tfm_lattice);
+    }
+
+    #[test]
+    fn test_apply_rotation() {
+        let matrix = [[0, 1, 0], [-1, 0, 0], [0, 0, 1]];
+        let tfm = Transform { matrix };
+
+        let orig_extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), [1, 2, 3].into());
+        let mut orig_lattice = Lattice::fill(orig_extent, (0, 0, 0));
+        for p in &orig_extent {
+            *orig_lattice.get_mut_world(&p) = (p.x, p.y, p.z);
+        }
+
+        let tfm_lattice = orig_lattice.apply_octahedral_transform(&tfm);
+
+        let manual_tfm_extent =
+            Extent::from_min_and_local_supremum([0, 0, 0].into(), [2, 1, 3].into());
+        let mut manual_tfm_lattice = Lattice::fill(manual_tfm_extent, (0, 0, 0));
+        for p in &manual_tfm_extent {
+            // Have to do the inverse rotation here.
+            *manual_tfm_lattice.get_mut_world(&p) = (-p.y, p.x, p.z);
+        }
+
+        assert_eq!(tfm_lattice, manual_tfm_lattice);
     }
 }
