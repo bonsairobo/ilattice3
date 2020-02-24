@@ -1,5 +1,6 @@
 use crate::{Extent, Point};
 
+/// All of the possible symmetries of a Lattice (octahedron).
 pub const OCTAHEDRAL_GROUP: [[[i32; 3]; 3]; 48] = [
     // Stationary X
     [[1, 0, 0], [0, 0, 1], [0, 1, 0]],
