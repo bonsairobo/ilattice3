@@ -15,7 +15,7 @@ pub trait StatelessIndexer: Indexer {
     fn new() -> Self;
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct YLevelsIndexer;
 
 impl StatelessIndexer for YLevelsIndexer {
@@ -44,7 +44,7 @@ impl Indexer for YLevelsIndexer {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct PeriodicYLevelsIndexer;
 
 impl PeriodicIndexer for PeriodicYLevelsIndexer {}
