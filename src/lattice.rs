@@ -176,12 +176,6 @@ impl<T: Clone, I: Indexer> Lattice<T, I> {
     }
 }
 
-impl<T: Clone> Lattice<T> {
-    pub fn fill(extent: Extent, init_val: T) -> Self {
-        Self::fill_with_indexer(YLevelsIndexer {}, extent, init_val)
-    }
-}
-
 impl<T, I: StatelessIndexer> Lattice<T, I> {
     pub fn new(extent: Extent, values: Vec<T>) -> Self {
         Lattice {
@@ -195,6 +189,12 @@ impl<T, I: StatelessIndexer> Lattice<T, I> {
         let extent = Extent::from_min_and_world_supremum([0, 0, 0].into(), sup);
 
         Self::new(extent, values)
+    }
+}
+
+impl<T: Clone, I: StatelessIndexer> Lattice<T, I> {
+    pub fn fill(extent: Extent, init_val: T) -> Self {
+        Self::fill_with_indexer(I::new(), extent, init_val)
     }
 }
 
