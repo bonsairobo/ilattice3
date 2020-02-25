@@ -8,7 +8,8 @@ use std::collections::{hash_map, HashMap};
 
 pub trait PeriodicLatticeIndexer: LatticeIndexer {}
 
-pub trait LatticeIndexer {
+// TODO: rename to Indexer
+pub trait LatticeIndexer: Clone {
     /// `s` is the local strict supremum of an extent. `p` is a local point.
     fn index_from_local_point(s: &Point, p: &Point) -> usize;
 
@@ -16,8 +17,19 @@ pub trait LatticeIndexer {
     fn local_point_from_index(s: &Point, index: usize) -> Point;
 }
 
+/// Most `Indexer`s should not require state to be instantiated.
+pub trait StatelessIndexer: LatticeIndexer {
+    fn new() -> Self;
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct YLevelsIndexer;
+
+impl StatelessIndexer for YLevelsIndexer {
+    fn new() -> Self {
+        YLevelsIndexer {}
+    }
+}
 
 impl LatticeIndexer for YLevelsIndexer {
     fn index_from_local_point(s: &Point, p: &Point) -> usize {
@@ -44,6 +56,12 @@ pub struct PeriodicYLevelsIndexer;
 
 impl PeriodicLatticeIndexer for PeriodicYLevelsIndexer {}
 
+impl StatelessIndexer for PeriodicYLevelsIndexer {
+    fn new() -> Self {
+        PeriodicYLevelsIndexer {}
+    }
+}
+
 impl LatticeIndexer for PeriodicYLevelsIndexer {
     fn index_from_local_point(s: &Point, p: &Point) -> usize {
         let px = p.x.rem_euclid(s.x);
@@ -66,7 +84,7 @@ pub struct Lattice<T, I = YLevelsIndexer> {
     values: Vec<T>,
 }
 
-impl<T: Clone, I: Clone + LatticeIndexer> Lattice<T, I> {
+impl<T: Clone, I: LatticeIndexer> Lattice<T, I> {
     /// Map every point by `tfm`. This function will assert `tfm.is_octahedral` in debug mode.
     pub fn apply_octahedral_transform(&self, tfm: &Transform) -> Self {
         debug_assert!(tfm.is_octahedral());
@@ -90,9 +108,7 @@ impl<T: Clone, I: Clone + LatticeIndexer> Lattice<T, I> {
 
         tfm_lattice
     }
-}
 
-impl<T: Clone, I: LatticeIndexer> Lattice<T, I> {
     pub fn fill_with_indexer(indexer: I, extent: Extent, init_val: T) -> Self {
         Lattice {
             extent,
@@ -186,19 +202,6 @@ impl<T> Lattice<T> {
     }
 }
 
-impl<T, I: Clone + LatticeIndexer> Lattice<T, I> {
-    pub fn map<F, S>(&self, f: F) -> Lattice<S, I>
-    where
-        F: Fn(&T) -> S,
-    {
-        Lattice::new_with_indexer(
-            self.get_extent(),
-            self.indexer.clone(),
-            self.values.iter().map(f).collect(),
-        )
-    }
-}
-
 impl<T, I: LatticeIndexer> Lattice<T, I> {
     pub fn new_with_indexer(extent: Extent, indexer: I, values: Vec<T>) -> Self {
         Lattice {
@@ -278,6 +281,17 @@ impl<T, I: LatticeIndexer> Lattice<T, I> {
         }
 
         false
+    }
+
+    pub fn map<F, S>(&self, f: F) -> Lattice<S, I>
+    where
+        F: Fn(&T) -> S,
+    {
+        Lattice::new_with_indexer(
+            self.get_extent(),
+            self.indexer.clone(),
+            self.values.iter().map(f).collect(),
+        )
     }
 }
 

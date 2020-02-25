@@ -1,6 +1,4 @@
-use crate::{Extent, Lattice, LatticeIndexer};
-
-use std::marker::PhantomData;
+use crate::{Extent, Lattice, LatticeIndexer, StatelessIndexer};
 
 /// A container for voxels without any specified location, but they can be placed back into any
 /// extent with the same size as their original extent, and their spatial order will be preserved.
@@ -9,12 +7,18 @@ use std::marker::PhantomData;
 #[derive(Clone, Eq, Hash, PartialEq)]
 pub struct Tile<C, I> {
     data: Vec<C>,
-    marker: PhantomData<I>,
+    indexer: I,
 }
 
-impl<C: Clone, I: LatticeIndexer> Tile<C, I> {
+impl<C, I: StatelessIndexer> Tile<C, I> {
     pub fn new(data: Vec<C>) -> Self {
-        Tile { data, marker: PhantomData::default() }
+        Tile { data, indexer: I::new() }
+    }
+}
+
+impl<C, I: LatticeIndexer> Tile<C, I> {
+    pub fn new_with_indexer(indexer: I, data: Vec<C>) -> Self {
+        Tile { data, indexer }
     }
 
     pub fn as_slice(&self) -> &[C] {
@@ -27,7 +31,8 @@ impl<C: Clone, I: LatticeIndexer> Tile<C, I> {
         lattice: &Lattice<G, I>,
         extent: &Extent,
     ) -> Tile<C, I> {
-        Tile::new(
+        Tile::new_with_indexer(
+            lattice.indexer.clone(),
             lattice
                 .serialize_extent(extent)
                 .into_iter()
@@ -47,7 +52,7 @@ impl<C: Clone, I: LatticeIndexer> Tile<C, I> {
 }
 
 impl<C: Clone, I: Clone + LatticeIndexer> Tile<C, I> {
-    pub fn put_in_lattice<T: Clone + From<C>>(self, extent: &Extent, dst: &mut Lattice<T, I>) {
+    pub fn put_in_lattice<T: From<C>>(self, extent: &Extent, dst: &mut Lattice<T, I>) {
         let src = self.put_in_extent(dst.indexer.clone(), *extent);
         Lattice::copy_extent(&src, dst, extent);
     }
