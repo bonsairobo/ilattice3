@@ -126,19 +126,21 @@ impl<T: Clone, I: LatticeIndexer> Lattice<T, I> {
         }
     }
 
-    pub fn copy_extent_to_position<J: LatticeIndexer>(
+    pub fn copy_extent_to_position<S: From<T>, J: LatticeIndexer>(
         src: &Self,
-        dst: &mut Lattice<T, J>,
+        dst: &mut Lattice<S, J>,
         dst_position: &Point,
         extent: &Extent,
     ) {
         for p in extent {
             let p_dst = *dst_position + p - extent.get_minimum();
-            *dst.get_mut_world(&p_dst) = src.get_world(&p).clone();
+            *dst.get_mut_world(&p_dst) = src.get_world(&p).clone().into();
         }
     }
 
-    pub fn copy_extent<J: LatticeIndexer>(src: &Self, dst: &mut Lattice<T, J>, extent: &Extent) {
+    pub fn copy_extent<S: From<T>, J: LatticeIndexer>(
+        src: &Self, dst: &mut Lattice<S, J>, extent: &Extent
+    ) {
         Self::copy_extent_to_position(src, dst, &extent.get_minimum(), extent)
     }
 
