@@ -155,6 +155,16 @@ impl<T: Clone, I: Indexer> Lattice<T, I> {
         Self::copy_extent_to_position(src, dst, &extent.get_minimum(), extent)
     }
 
+    pub fn copy_extent_into_new_lattice(&self, extent: &Extent) -> Self {
+        let volume = extent.volume();
+        let mut values = Vec::with_capacity(volume);
+        unsafe { values.set_len(volume); }
+        let mut copy = Lattice::new_with_indexer(*extent, self.indexer.clone(), values);
+        Self::copy_extent(self, &mut copy, extent);
+
+        copy
+    }
+
     pub fn map_extent<S, F, J>(src: &Self, dst: &mut Lattice<S, J>, extent: &Extent, f: F)
     where
         F: Fn(&T) -> S,
@@ -169,15 +179,6 @@ impl<T: Clone, I: Indexer> Lattice<T, I> {
 impl<T: Clone> Lattice<T> {
     pub fn fill(extent: Extent, init_val: T) -> Self {
         Self::fill_with_indexer(YLevelsIndexer {}, extent, init_val)
-    }
-}
-
-impl<T: Clone + Default> Lattice<T> {
-    pub fn copy_extent_into_new_lattice(&self, extent: &Extent) -> Self {
-        let mut copy = Lattice::fill(*extent, T::default());
-        Self::copy_extent(self, &mut copy, extent);
-
-        copy
     }
 }
 
