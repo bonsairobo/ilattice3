@@ -30,4 +30,6 @@ pub use lattice::{Lattice, LatticeKeyValIterator};
 pub use normal::{Direction, DirectionIndex, Normal, PlaneSpanInfo, ALL_DIRECTIONS, ALL_NORMALS};
 pub use point::Point;
 pub use tile::Tile;
-pub use transform::{Transform, OCTAHEDRAL_GROUP, Z_STATIONARY_OCTAHEDRAL_GROUP};
+pub use transform::{
+    Transform, OCTAHEDRAL_GROUP, Z_STATIONARY_MIRROR_GROUP, Z_STATIONARY_OCTAHEDRAL_GROUP
+};
