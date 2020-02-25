@@ -2,6 +2,7 @@
 
 // TODO: more robust linear algebra and transformations
 
+mod chunked;
 mod extent;
 mod lattice;
 mod normal;
@@ -21,10 +22,11 @@ mod image;
 #[cfg(test)]
 mod test_util;
 
+pub use chunked::{ChunkKeyIterator, ChunkedLattice, ChunkedLatticeIterator};
 pub use extent::{bounding_extent, Extent, ExtentIterator};
 pub use lattice::{
-    ChunkKeyIterator, ChunkedLattice, ChunkedLatticeIterator, Indexer, Lattice,
-    LatticeKeyValIterator, PeriodicYLevelsIndexer, StatelessIndexer, YLevelsIndexer,
+    Indexer, Lattice, LatticeKeyValIterator, PeriodicYLevelsIndexer, StatelessIndexer,
+    YLevelsIndexer,
 };
 pub use normal::{Direction, DirectionIndex, Normal, PlaneSpanInfo, ALL_DIRECTIONS, ALL_NORMALS};
 pub use point::Point;
