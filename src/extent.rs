@@ -186,7 +186,7 @@ impl Extent {
         self.intersection(other) == *self
     }
 
-    /// Get the corner points, i.e. those which are extreme in each dimension.
+    /// Get the corner points, i.e. those boundary points which are extreme in each dimension.
     pub fn get_world_corners(&self) -> [Point; 8] {
         let min = self.get_minimum();
         let max = self.get_world_max();

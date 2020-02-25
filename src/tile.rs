@@ -1,11 +1,11 @@
-use crate::{Extent, Indexer, Lattice, StatelessIndexer};
+use crate::{Extent, Indexer, Lattice, StatelessIndexer, YLevelsIndexer};
 
 /// A container for voxels without any specified location, but they can be placed back into any
 /// extent with the same size as their original extent, and their spatial order will be preserved.
 /// This saves you from storing an `Extent` if you don't need it, and it also allows hashing and
 /// comparison based only on the values.
 #[derive(Clone, Eq, Hash, PartialEq)]
-pub struct Tile<C, I> {
+pub struct Tile<C, I = YLevelsIndexer> {
     data: Vec<C>,
     indexer: I,
 }
