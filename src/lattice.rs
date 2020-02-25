@@ -182,11 +182,11 @@ impl<T: Clone> Lattice<T> {
     }
 }
 
-impl<T> Lattice<T> {
+impl<T, I: StatelessIndexer> Lattice<T, I> {
     pub fn new(extent: Extent, values: Vec<T>) -> Self {
         Lattice {
             extent,
-            indexer: YLevelsIndexer {},
+            indexer: I::new(),
             values,
         }
     }
