@@ -70,6 +70,16 @@ pub const Z_STATIONARY_OCTAHEDRAL_GROUP: [[[i32; 3]; 3]; 8] = [
     [[0, -1, 0], [-1, 0, 0], [0, 0, 1]],
 ];
 
+/// All octahedral without double mirrors.
+pub const Z_STATIONARY_NO_DOUBLE_MIRROR_GROUP: [[[i32; 3]; 3]; 6] = [
+    [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+    [[-1, 0, 0], [0, 1, 0], [0, 0, 1]],
+    [[1, 0, 0], [0, -1, 0], [0, 0, 1]],
+    [[0, -1, 0], [1, 0, 0], [0, 0, 1]],
+    [[0, 1, 0], [-1, 0, 0], [0, 0, 1]],
+    [[0, -1, 0], [-1, 0, 0], [0, 0, 1]],
+];
+
 /// Octahedral without rotations.
 pub const Z_STATIONARY_MIRROR_GROUP: [[[i32; 3]; 3]; 4] = [
     [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
