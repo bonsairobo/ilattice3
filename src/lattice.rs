@@ -8,7 +8,6 @@ use std::collections::{hash_map, HashMap};
 
 pub trait PeriodicIndexer: Indexer {}
 
-// TODO: rename to Indexer
 pub trait Indexer: Clone {
     /// `s` is the local strict supremum of an extent. `p` is a local point.
     fn index_from_local_point(s: &Point, p: &Point) -> usize;
