@@ -321,7 +321,6 @@ impl<'a, T: Clone> Iterator for LatticeKeyValIterator<'a, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_util::assert_elements_eq;
 
     #[test]
     fn test_periodic_indexer() {
@@ -380,55 +379,6 @@ mod tests {
         Lattice::copy_extent(&serial_lattice, &mut lattice, &serial_extent);
 
         assert_eq!(orig_lattice, lattice);
-    }
-
-    #[test]
-    fn test_chunked_lattice_iterator() {
-        // All points less than [0, 0, 0] in the query extent will have value 1.
-        let sublattice1 = Lattice::fill(Extent::from_center_and_radius([-7, -7, -7].into(), 7), 1);
-        // Only [1, 1, 1] with have value 2 in the query extent.
-        let sublattice2 = Lattice::fill(Extent::from_center_and_radius([8, 8, 8].into(), 7), 2);
-        // All other point values will not change (stay 0).
-
-        let mut chunked_lattice: ChunkedLattice<u32> = ChunkedLattice::new([4, 4, 4].into());
-        chunked_lattice.copy_lattice_into_chunks(&sublattice1, 0);
-        chunked_lattice.copy_lattice_into_chunks(&sublattice2, 0);
-
-        let query_extent = Extent::from_center_and_radius([0, 0, 0].into(), 1);
-        let points: Vec<_> = chunked_lattice.iter_point_values(query_extent).collect();
-
-        assert_elements_eq(
-            &points,
-            &vec![
-                ([-1, -1, -1].into(), 1),
-                ([-1, -1, 0].into(), 1),
-                ([-1, -1, 1].into(), 0),
-                ([-1, 0, -1].into(), 1),
-                ([-1, 0, 0].into(), 1),
-                ([-1, 0, 1].into(), 0),
-                ([-1, 1, -1].into(), 0),
-                ([-1, 1, 0].into(), 0),
-                ([-1, 1, 1].into(), 0),
-                ([0, -1, -1].into(), 1),
-                ([0, -1, 0].into(), 1),
-                ([0, -1, 1].into(), 0),
-                ([0, 0, -1].into(), 1),
-                ([0, 0, 0].into(), 1),
-                ([0, 0, 1].into(), 0),
-                ([0, 1, -1].into(), 0),
-                ([0, 1, 0].into(), 0),
-                ([0, 1, 1].into(), 0),
-                ([1, -1, -1].into(), 0),
-                ([1, -1, 0].into(), 0),
-                ([1, -1, 1].into(), 0),
-                ([1, 0, -1].into(), 0),
-                ([1, 0, 0].into(), 0),
-                ([1, 0, 1].into(), 0),
-                ([1, 1, -1].into(), 0),
-                ([1, 1, 0].into(), 0),
-                ([1, 1, 1].into(), 2),
-            ],
-        );
     }
 
     #[test]
