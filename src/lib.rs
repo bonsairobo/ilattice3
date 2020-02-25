@@ -31,5 +31,6 @@ pub use normal::{Direction, DirectionIndex, Normal, PlaneSpanInfo, ALL_DIRECTION
 pub use point::Point;
 pub use tile::Tile;
 pub use transform::{
-    Transform, OCTAHEDRAL_GROUP, Z_STATIONARY_MIRROR_GROUP, Z_STATIONARY_OCTAHEDRAL_GROUP
+    Transform, OCTAHEDRAL_GROUP, Z_STATIONARY_MIRROR_GROUP, Z_STATIONARY_OCTAHEDRAL_GROUP,
+    Z_STATIONARY_NO_DOUBLE_MIRROR_GROUP
 };
