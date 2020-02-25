@@ -46,6 +46,7 @@ impl<C, I: Indexer> Tile<C, I> {
 
     /// Puts the tile in a specific location.
     pub fn put_in_extent(self, indexer: I, extent: Extent) -> Lattice<C, I> {
+        assert_eq!(extent.volume(), self.data.len());
         Lattice::new_with_indexer(extent, indexer, self.data)
     }
 }
