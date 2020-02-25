@@ -4,6 +4,7 @@
 
 mod chunked;
 mod extent;
+mod indexer;
 mod lattice;
 mod normal;
 mod point;
@@ -24,10 +25,8 @@ mod test_util;
 
 pub use chunked::{ChunkKeyIterator, ChunkedLattice, ChunkedLatticeIterator};
 pub use extent::{bounding_extent, Extent, ExtentIterator};
-pub use lattice::{
-    Indexer, Lattice, LatticeKeyValIterator, PeriodicYLevelsIndexer, StatelessIndexer,
-    YLevelsIndexer,
-};
+pub use indexer::{Indexer, PeriodicYLevelsIndexer, StatelessIndexer, YLevelsIndexer};
+pub use lattice::{Lattice, LatticeKeyValIterator};
 pub use normal::{Direction, DirectionIndex, Normal, PlaneSpanInfo, ALL_DIRECTIONS, ALL_NORMALS};
 pub use point::Point;
 pub use tile::Tile;

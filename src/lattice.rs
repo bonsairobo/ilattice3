@@ -1,78 +1,8 @@
-use crate::{Extent, ExtentIterator, Point, Transform};
-
-pub trait PeriodicIndexer: Indexer {}
-
-pub trait Indexer: Clone {
-    /// `s` is the local strict supremum of an extent. `p` is a local point.
-    fn index_from_local_point(s: &Point, p: &Point) -> usize;
-
-    /// `s` is the local strict supremum of an extent. `index` is a linear index.
-    fn local_point_from_index(s: &Point, index: usize) -> Point;
-}
-
-/// Most `Indexer`s should not require state to be instantiated.
-pub trait StatelessIndexer: Indexer {
-    fn new() -> Self;
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct YLevelsIndexer;
-
-impl StatelessIndexer for YLevelsIndexer {
-    fn new() -> Self {
-        YLevelsIndexer {}
-    }
-}
-
-impl Indexer for YLevelsIndexer {
-    fn index_from_local_point(s: &Point, p: &Point) -> usize {
-        // This scheme is chosen for ease of hand-crafting voxel maps.
-        (p.y * s.x * s.z + p.z * s.x + p.x) as usize
-    }
-
-    fn local_point_from_index(s: &Point, index: usize) -> Point {
-        assert!(index <= std::i32::MAX as usize);
-        let index = index as i32;
-        let xz_area = s.x * s.z;
-        let y = index / xz_area;
-        let rem = index - y * xz_area;
-        let z = rem / s.x;
-        let rem = rem - z * s.x;
-        let x = rem;
-
-        Point::new(x, y, z)
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct PeriodicYLevelsIndexer;
-
-impl PeriodicIndexer for PeriodicYLevelsIndexer {}
-
-impl StatelessIndexer for PeriodicYLevelsIndexer {
-    fn new() -> Self {
-        PeriodicYLevelsIndexer {}
-    }
-}
-
-impl Indexer for PeriodicYLevelsIndexer {
-    fn index_from_local_point(s: &Point, p: &Point) -> usize {
-        let px = p.x.rem_euclid(s.x);
-        let py = p.y.rem_euclid(s.y);
-        let pz = p.z.rem_euclid(s.z);
-
-        (py * s.x * s.z + pz * s.x + px) as usize
-    }
-
-    /// Returns the canonical point which is contained in the extent.
-    fn local_point_from_index(s: &Point, index: usize) -> Point {
-        YLevelsIndexer::local_point_from_index(s, index)
-    }
-}
+use crate::{Extent, ExtentIterator, Indexer, Point, StatelessIndexer, Transform, YLevelsIndexer};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Lattice<T, I = YLevelsIndexer> {
-    pub indexer: I,
+    indexer: I,
     extent: Extent,
     values: Vec<T>,
 }
@@ -207,6 +137,10 @@ impl<T, I: Indexer> Lattice<T, I> {
         }
     }
 
+    pub fn get_indexer(&self) -> &I {
+        &self.indexer
+    }
+
     pub fn get_extent(&self) -> Extent {
         self.extent
     }
@@ -322,11 +256,12 @@ impl<'a, T: Clone> Iterator for LatticeKeyValIterator<'a, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::PeriodicYLevelsIndexer;
 
     #[test]
     fn test_periodic_indexer() {
         let extent = Extent::from_min_and_local_supremum([-1, -1, -1].into(), [3, 3, 3].into());
-        let mut lattice = Lattice::fill_with_indexer(PeriodicYLevelsIndexer {}, extent, (0, 0, 0));
+        let mut lattice = Lattice::<_, PeriodicYLevelsIndexer>::fill(extent, (0, 0, 0));
         for p in &extent {
             *lattice.get_mut_world(&p) = (p.x, p.y, p.z);
         }
@@ -368,7 +303,7 @@ mod tests {
     #[test]
     fn test_serialized_extent_back_to_lattice() {
         let extent = Extent::from_min_and_local_supremum([-1, -1, -1].into(), [3, 3, 3].into());
-        let mut lattice = Lattice::fill(extent, (0, 0, 0));
+        let mut lattice = Lattice::<_, YLevelsIndexer>::fill(extent, (0, 0, 0));
         for p in &extent {
             *lattice.get_mut_world(&p) = (p.x, p.y, p.z);
         }
@@ -376,7 +311,7 @@ mod tests {
 
         let serial_extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), [2, 2, 2].into());
         let serialized = lattice.serialize_extent(&serial_extent);
-        let serial_lattice = Lattice::new(serial_extent, serialized);
+        let serial_lattice = Lattice::<_, YLevelsIndexer>::new(serial_extent, serialized);
         Lattice::copy_extent(&serial_lattice, &mut lattice, &serial_extent);
 
         assert_eq!(orig_lattice, lattice);
@@ -388,7 +323,7 @@ mod tests {
         let tfm = Transform { matrix };
 
         let extent = Extent::from_min_and_local_supremum([-1, -1, -1].into(), [3, 3, 3].into());
-        let mut lattice = Lattice::fill(extent, (0, 0, 0));
+        let mut lattice = Lattice::<_, YLevelsIndexer>::fill(extent, (0, 0, 0));
         for p in &extent {
             *lattice.get_mut_world(&p) = (p.x, p.y, p.z);
         }
@@ -406,7 +341,7 @@ mod tests {
 
         let orig_extent =
             Extent::from_min_and_local_supremum([-2, -2, -2].into(), [3, 3, 3].into());
-        let mut orig_lattice = Lattice::fill(orig_extent, (0, 0, 0));
+        let mut orig_lattice = Lattice::<_, YLevelsIndexer>::fill(orig_extent, (0, 0, 0));
         for p in &orig_extent {
             *orig_lattice.get_mut_world(&p) = (p.x, p.y, p.z);
         }
@@ -429,7 +364,7 @@ mod tests {
         let tfm = Transform { matrix };
 
         let orig_extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), [1, 2, 3].into());
-        let mut orig_lattice = Lattice::fill(orig_extent, (0, 0, 0));
+        let mut orig_lattice = Lattice::<_, YLevelsIndexer>::fill(orig_extent, (0, 0, 0));
         for p in &orig_extent {
             *orig_lattice.get_mut_world(&p) = (p.x, p.y, p.z);
         }
@@ -452,7 +387,7 @@ mod tests {
         let orig_extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), [2, 2, 2].into());
         let bottom_extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), [2, 2, 1].into());
         let top_extent = Extent::from_min_and_local_supremum([0, 0, 1].into(), [2, 2, 1].into());
-        let mut orig_lattice = Lattice::fill(orig_extent, 0);
+        let mut orig_lattice = Lattice::<_, YLevelsIndexer>::fill(orig_extent, 0);
         for p in &bottom_extent {
             *orig_lattice.get_mut_world(&p) = 1;
         }

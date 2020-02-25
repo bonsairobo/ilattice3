@@ -35,7 +35,7 @@ impl<C, I: Indexer> Tile<C, I> {
         extent: &Extent,
     ) -> Tile<C, I> {
         Tile::new_with_indexer(
-            lattice.indexer.clone(),
+            lattice.get_indexer().clone(),
             lattice
                 .serialize_extent(extent)
                 .into_iter()
@@ -52,7 +52,7 @@ impl<C, I: Indexer> Tile<C, I> {
 
 impl<C: Clone, I: Clone + Indexer> Tile<C, I> {
     pub fn put_in_lattice<T: From<C>>(self, extent: &Extent, dst: &mut Lattice<T, I>) {
-        let src = self.put_in_extent(dst.indexer.clone(), *extent);
+        let src = self.put_in_extent(dst.get_indexer().clone(), *extent);
         Lattice::copy_extent(&src, dst, extent);
     }
 }
