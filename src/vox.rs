@@ -1,8 +1,8 @@
-use crate::{Extent, Lattice, LatticeIndexer, Point};
+use crate::{Extent, Indexer, Lattice, Point};
 
 use dot_vox::*;
 
-impl<I: LatticeIndexer> Into<DotVoxData> for Lattice<VoxColor, I> {
+impl<I: Indexer> Into<DotVoxData> for Lattice<VoxColor, I> {
     fn into(self: Self) -> DotVoxData {
         let size = *self.get_extent().get_local_supremum();
         // Voxel coordinates are limited to u8.
@@ -45,7 +45,7 @@ impl<I: LatticeIndexer> Into<DotVoxData> for Lattice<VoxColor, I> {
 pub type VoxColor = u16;
 pub const EMPTY_VOX_COLOR: VoxColor = std::u8::MAX as u16 + 1;
 
-impl<I: LatticeIndexer> Lattice<VoxColor, I> {
+impl<I: Indexer> Lattice<VoxColor, I> {
     pub fn from_vox_with_indexer(indexer: I, data: &DotVoxData, model_index: usize) -> Self {
         let DotVoxData { models, .. } = data;
         let Model {

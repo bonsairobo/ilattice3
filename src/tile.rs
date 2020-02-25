@@ -1,4 +1,4 @@
-use crate::{Extent, Lattice, LatticeIndexer, StatelessIndexer};
+use crate::{Extent, Indexer, Lattice, StatelessIndexer};
 
 /// A container for voxels without any specified location, but they can be placed back into any
 /// extent with the same size as their original extent, and their spatial order will be preserved.
@@ -12,11 +12,14 @@ pub struct Tile<C, I> {
 
 impl<C, I: StatelessIndexer> Tile<C, I> {
     pub fn new(data: Vec<C>) -> Self {
-        Tile { data, indexer: I::new() }
+        Tile {
+            data,
+            indexer: I::new(),
+        }
     }
 }
 
-impl<C, I: LatticeIndexer> Tile<C, I> {
+impl<C, I: Indexer> Tile<C, I> {
     pub fn new_with_indexer(indexer: I, data: Vec<C>) -> Self {
         Tile { data, indexer }
     }
@@ -42,16 +45,12 @@ impl<C, I: LatticeIndexer> Tile<C, I> {
     }
 
     /// Puts the tile in a specific location.
-    pub fn put_in_extent(
-        self,
-        indexer: I,
-        extent: Extent,
-    ) -> Lattice<C, I> {
+    pub fn put_in_extent(self, indexer: I, extent: Extent) -> Lattice<C, I> {
         Lattice::new_with_indexer(extent, indexer, self.data)
     }
 }
 
-impl<C: Clone, I: Clone + LatticeIndexer> Tile<C, I> {
+impl<C: Clone, I: Clone + Indexer> Tile<C, I> {
     pub fn put_in_lattice<T: From<C>>(self, extent: &Extent, dst: &mut Lattice<T, I>) {
         let src = self.put_in_extent(dst.indexer.clone(), *extent);
         Lattice::copy_extent(&src, dst, extent);

@@ -23,7 +23,7 @@ mod test_util;
 
 pub use extent::{bounding_extent, Extent, ExtentIterator};
 pub use lattice::{
-    ChunkKeyIterator, ChunkedLattice, ChunkedLatticeIterator, Lattice, LatticeIndexer,
+    ChunkKeyIterator, ChunkedLattice, ChunkedLatticeIterator, Indexer, Lattice,
     LatticeKeyValIterator, PeriodicYLevelsIndexer, StatelessIndexer, YLevelsIndexer,
 };
 pub use normal::{Direction, DirectionIndex, Normal, PlaneSpanInfo, ALL_DIRECTIONS, ALL_NORMALS};

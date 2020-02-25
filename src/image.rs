@@ -1,8 +1,8 @@
-use crate::{Extent, Lattice, LatticeIndexer};
+use crate::{Extent, Indexer, Lattice};
 
 use image::{Rgba, RgbaImage};
 
-impl<I: LatticeIndexer> Into<RgbaImage> for &Lattice<Rgba<u8>, I> {
+impl<I: Indexer> Into<RgbaImage> for &Lattice<Rgba<u8>, I> {
     fn into(self) -> RgbaImage {
         let extent = self.get_extent();
         let size = extent.get_local_supremum();
@@ -20,7 +20,7 @@ impl<I: LatticeIndexer> Into<RgbaImage> for &Lattice<Rgba<u8>, I> {
     }
 }
 
-impl<I: LatticeIndexer> From<(&RgbaImage, I)> for Lattice<Rgba<u8>, I> {
+impl<I: Indexer> From<(&RgbaImage, I)> for Lattice<Rgba<u8>, I> {
     fn from((image, indexer): (&RgbaImage, I)) -> Self {
         let size = [image.width() as i32, image.height() as i32, 1].into();
         let extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), size);

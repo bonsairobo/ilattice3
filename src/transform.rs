@@ -87,8 +87,10 @@ impl Transform {
 
     pub fn apply_to_extent(&self, extent: &Extent) -> Extent {
         let corners = extent.get_world_corners();
-        let tfm_corners: Vec<[i32; 3]> =
-            corners.iter().map(|c| self.apply_to_point(c).into()).collect();
+        let tfm_corners: Vec<[i32; 3]> = corners
+            .iter()
+            .map(|c| self.apply_to_point(c).into())
+            .collect();
         let tfm_min: Point = (*tfm_corners.iter().min().unwrap()).into();
         let tfm_max: Point = (*tfm_corners.iter().max().unwrap()).into();
 

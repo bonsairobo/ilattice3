@@ -6,10 +6,10 @@ use crate::{
 
 use std::collections::{hash_map, HashMap};
 
-pub trait PeriodicLatticeIndexer: LatticeIndexer {}
+pub trait PeriodicIndexer: Indexer {}
 
 // TODO: rename to Indexer
-pub trait LatticeIndexer: Clone {
+pub trait Indexer: Clone {
     /// `s` is the local strict supremum of an extent. `p` is a local point.
     fn index_from_local_point(s: &Point, p: &Point) -> usize;
 
@@ -18,7 +18,7 @@ pub trait LatticeIndexer: Clone {
 }
 
 /// Most `Indexer`s should not require state to be instantiated.
-pub trait StatelessIndexer: LatticeIndexer {
+pub trait StatelessIndexer: Indexer {
     fn new() -> Self;
 }
 
@@ -31,7 +31,7 @@ impl StatelessIndexer for YLevelsIndexer {
     }
 }
 
-impl LatticeIndexer for YLevelsIndexer {
+impl Indexer for YLevelsIndexer {
     fn index_from_local_point(s: &Point, p: &Point) -> usize {
         // This scheme is chosen for ease of hand-crafting voxel maps.
         (p.y * s.x * s.z + p.z * s.x + p.x) as usize
@@ -54,7 +54,7 @@ impl LatticeIndexer for YLevelsIndexer {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct PeriodicYLevelsIndexer;
 
-impl PeriodicLatticeIndexer for PeriodicYLevelsIndexer {}
+impl PeriodicIndexer for PeriodicYLevelsIndexer {}
 
 impl StatelessIndexer for PeriodicYLevelsIndexer {
     fn new() -> Self {
@@ -62,7 +62,7 @@ impl StatelessIndexer for PeriodicYLevelsIndexer {
     }
 }
 
-impl LatticeIndexer for PeriodicYLevelsIndexer {
+impl Indexer for PeriodicYLevelsIndexer {
     fn index_from_local_point(s: &Point, p: &Point) -> usize {
         let px = p.x.rem_euclid(s.x);
         let py = p.y.rem_euclid(s.y);
@@ -84,7 +84,7 @@ pub struct Lattice<T, I = YLevelsIndexer> {
     values: Vec<T>,
 }
 
-impl<T: Clone, I: LatticeIndexer> Lattice<T, I> {
+impl<T: Clone, I: Indexer> Lattice<T, I> {
     /// Map every point by `tfm`. This function will assert `tfm.is_octahedral` in debug mode.
     pub fn apply_octahedral_transform(&self, tfm: &Transform) -> Self {
         debug_assert!(tfm.is_octahedral());
@@ -117,7 +117,7 @@ impl<T: Clone, I: LatticeIndexer> Lattice<T, I> {
         }
     }
 
-    /// Returns a vec of the data in `extent`, ordered linearly by `I: LatticeIndexer`. A lattice
+    /// Returns a vec of the data in `extent`, ordered linearly by `I: Indexer`. A lattice
     /// can be recreated from the vec using `Lattice::<T, I>::new_with_indexer`.
     pub fn serialize_extent(&self, extent: &Extent) -> Vec<T> {
         let num_elements = extent.volume();
@@ -142,7 +142,7 @@ impl<T: Clone, I: LatticeIndexer> Lattice<T, I> {
         }
     }
 
-    pub fn copy_extent_to_position<S: From<T>, J: LatticeIndexer>(
+    pub fn copy_extent_to_position<S: From<T>, J: Indexer>(
         src: &Self,
         dst: &mut Lattice<S, J>,
         dst_position: &Point,
@@ -154,8 +154,10 @@ impl<T: Clone, I: LatticeIndexer> Lattice<T, I> {
         }
     }
 
-    pub fn copy_extent<S: From<T>, J: LatticeIndexer>(
-        src: &Self, dst: &mut Lattice<S, J>, extent: &Extent
+    pub fn copy_extent<S: From<T>, J: Indexer>(
+        src: &Self,
+        dst: &mut Lattice<S, J>,
+        extent: &Extent,
     ) {
         Self::copy_extent_to_position(src, dst, &extent.get_minimum(), extent)
     }
@@ -163,7 +165,7 @@ impl<T: Clone, I: LatticeIndexer> Lattice<T, I> {
     pub fn map_extent<S, F, J>(src: &Self, dst: &mut Lattice<S, J>, extent: &Extent, f: F)
     where
         F: Fn(&T) -> S,
-        J: LatticeIndexer,
+        J: Indexer,
     {
         for p in extent {
             *dst.get_mut_world(&p) = f(src.get_world(&p));
@@ -202,7 +204,7 @@ impl<T> Lattice<T> {
     }
 }
 
-impl<T, I: LatticeIndexer> Lattice<T, I> {
+impl<T, I: Indexer> Lattice<T, I> {
     pub fn new_with_indexer(extent: Extent, indexer: I, values: Vec<T>) -> Self {
         Lattice {
             extent,
