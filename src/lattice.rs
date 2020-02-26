@@ -36,6 +36,10 @@ impl<T: Clone, I: Indexer> Lattice<T, I> {
         self.extent = self.extent + *delta;
     }
 
+    pub fn set_minimum(&mut self, new_min: &Point) {
+        self.extent = self.extent.set_minimum(*new_min);
+    }
+
     pub fn fill_with_indexer(indexer: I, extent: Extent, init_val: T) -> Self {
         Lattice {
             extent,
