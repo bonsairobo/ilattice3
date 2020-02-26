@@ -116,11 +116,13 @@ impl Extent {
         &self.world_sup
     }
 
+    // TODO: the name is confusing, since it returns the result
     /// Translates the entire extent such that `min` is the new minimum.
     pub fn set_minimum(&self, min: Point) -> Self {
         Extent::from_min_and_local_supremum(min, self.local_sup)
     }
 
+    // TODO: the name is confusing, since it returns the result
     pub fn set_minimum_to_origin(&self) -> Self {
         *self - self.minimum
     }
