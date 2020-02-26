@@ -32,6 +32,10 @@ impl<T: Clone, I: Indexer> Lattice<T, I> {
         tfm_lattice
     }
 
+    pub fn translate(&mut self, delta: &Point) {
+        self.extent = self.extent + *delta;
+    }
+
     pub fn fill_with_indexer(indexer: I, extent: Extent, init_val: T) -> Self {
         Lattice {
             extent,
