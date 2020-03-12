@@ -19,6 +19,5 @@ num = "*"
 num-traits = "*"
 serde = { version = "*", features = ["derive"] }
 
-# dot_vox = "*"
-dot_vox = { git = "https://github.com/bonsairobo/dot_vox", optional = true }
+dot_vox = { version = "*", optional = true }
 image = { version = "*", optional = true }
