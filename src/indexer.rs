@@ -2,6 +2,7 @@ use crate::Point;
 
 pub trait PeriodicIndexer: Indexer {}
 
+/// Describes how to convert from a 3D point to a linear array index (and back).
 pub trait Indexer: Clone {
     /// `s` is the local strict supremum of an extent. `p` is a local point.
     fn index_from_local_point(s: &Point, p: &Point) -> usize;
@@ -15,6 +16,7 @@ pub trait StatelessIndexer: Indexer {
     fn new() -> Self;
 }
 
+/// A standard `Indexer` that allows for layouts where XZ level sets are specified in order of Y.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct YLevelsIndexer;
 
@@ -44,6 +46,8 @@ impl Indexer for YLevelsIndexer {
     }
 }
 
+/// Same as the `YLevelsIndexer`, but periodic, i.e. indexing out of bounds will give the local
+/// modulus by the size of the extent.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct PeriodicYLevelsIndexer;
 

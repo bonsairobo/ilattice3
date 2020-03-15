@@ -298,6 +298,7 @@ where
     Extent::from_min_and_world_max(min_point, max_point)
 }
 
+/// An iterator over all points in an extent (in no specific order).
 #[derive(Debug)]
 pub struct ExtentIterator {
     extent: Extent,

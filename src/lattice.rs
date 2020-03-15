@@ -1,5 +1,6 @@
 use crate::{Extent, ExtentIterator, Indexer, Point, StatelessIndexer, Transform, YLevelsIndexer};
 
+/// A map from points in an extent to some kind of data `T`.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Lattice<T, I = YLevelsIndexer> {
     indexer: I,
@@ -233,15 +234,20 @@ impl<T, I: Indexer> Lattice<T, I> {
             self.values.iter().map(f).collect(),
         )
     }
+
+    pub fn iter(&self) -> LatticeKeyValIterator<T, I> {
+        LatticeKeyValIterator::new(self, self.extent.into_iter())
+    }
 }
 
-pub struct LatticeKeyValIterator<'a, T> {
-    lattice: &'a Lattice<T>,
+/// An iterator over the points and data in a lattice.
+pub struct LatticeKeyValIterator<'a, T, I> {
+    lattice: &'a Lattice<T, I>,
     extent_iter: ExtentIterator,
 }
 
-impl<'a, T> LatticeKeyValIterator<'a, T> {
-    pub fn new(lattice: &'a Lattice<T>, extent_iter: ExtentIterator) -> Self {
+impl<'a, T, I: Indexer> LatticeKeyValIterator<'a, T, I> {
+    pub fn new(lattice: &'a Lattice<T, I>, extent_iter: ExtentIterator) -> Self {
         Self {
             lattice,
             extent_iter,
@@ -249,7 +255,7 @@ impl<'a, T> LatticeKeyValIterator<'a, T> {
     }
 }
 
-impl<'a, T: Clone> Iterator for LatticeKeyValIterator<'a, T> {
+impl<'a, T: Clone, I: Indexer> Iterator for LatticeKeyValIterator<'a, T, I> {
     type Item = (Point, T);
 
     fn next(&mut self) -> Option<Self::Item> {

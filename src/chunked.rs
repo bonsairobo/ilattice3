@@ -1,4 +1,6 @@
-use crate::{bounding_extent, lattice::LatticeKeyValIterator, Extent, Lattice, Point};
+use crate::{
+    bounding_extent, lattice::LatticeKeyValIterator, Extent, Indexer, Lattice, Point, YLevelsIndexer
+};
 
 use std::collections::{hash_map, HashMap};
 
@@ -51,12 +53,17 @@ impl<T> ChunkedLattice<T> {
         self.map.get(&self.chunk_key(point))
     }
 
+    pub fn get_mut_chunk_containing_point(&mut self, point: &Point) -> Option<&mut Lattice<T>> {
+        self.map.get_mut(&self.chunk_key(point))
+    }
+
     /// Returns an iterator over all points and corresponding values in the given extent. If chunks
     /// are missing from the extent, then their points will not be yielded.
     pub fn iter_point_values(
         &self,
         extent: Extent,
-    ) -> ChunkedLatticeIterator<T, std::vec::IntoIter<&Lattice<T>>> {
+    ) -> ChunkedLatticeIterator<T, std::vec::IntoIter<&Lattice<T, YLevelsIndexer>>, YLevelsIndexer>
+    {
         let lattices = self
             .key_extent(&extent)
             .into_iter()
@@ -71,18 +78,27 @@ impl<T> ChunkedLattice<T> {
         }
     }
 
+    /// An iterator over the chunk keys (sparse points in the space of chunk coordinates).
     pub fn chunk_keys(&self) -> ChunkKeyIterator<T> {
         ChunkKeyIterator {
             map_key_iter: self.map.keys(),
         }
     }
 
+    /// Get the data for point `p` if `p` exists.
     pub fn get_world(&self, p: &Point) -> Option<&T> {
         self.get_chunk_containing_point(p)
             .map(|chunk| chunk.get_world(p))
     }
+
+    /// Get mutable data for point `p` if `p` exists.
+    pub fn get_mut_world(&mut self, p: &Point) -> Option<&mut T> {
+        self.get_mut_chunk_containing_point(p)
+            .map(|chunk| chunk.get_mut_world(p))
+    }
 }
 
+/// An iterator over the chunk keys (sparse points in the space of chunk coordinates).
 pub struct ChunkKeyIterator<'a, T> {
     map_key_iter: hash_map::Keys<'a, Point, Lattice<T>>,
 }
@@ -132,19 +148,21 @@ impl<T: Clone + Default> ChunkedLattice<T> {
     }
 }
 
-pub struct ChunkedLatticeIterator<'a, T, I>
+/// An iterator over the points in a `ChunkedLattice`.
+pub struct ChunkedLatticeIterator<'a, T, It, In>
 where
-    I: Iterator<Item = &'a Lattice<T>>,
+    It: Iterator<Item = &'a Lattice<T, In>>,
 {
     full_extent: Extent,
-    lattices: I,
-    lattice_iter: Option<LatticeKeyValIterator<'a, T>>,
+    lattices: It,
+    lattice_iter: Option<LatticeKeyValIterator<'a, T, In>>,
 }
 
-impl<'a, T, I> ChunkedLatticeIterator<'a, T, I>
+impl<'a, T, It, In> ChunkedLatticeIterator<'a, T, It, In>
 where
     T: Clone,
-    I: Iterator<Item = &'a Lattice<T>>,
+    It: Iterator<Item = &'a Lattice<T, In>>,
+    In: Indexer,
 {
     fn move_to_next_lattice(&mut self) {
         self.lattice_iter = self.lattices.next().map(|l| {
@@ -155,10 +173,11 @@ where
     }
 }
 
-impl<'a, T, I> Iterator for ChunkedLatticeIterator<'a, T, I>
+impl<'a, T, It, In> Iterator for ChunkedLatticeIterator<'a, T, It, In>
 where
     T: Clone,
-    I: Iterator<Item = &'a Lattice<T>>,
+    It: Iterator<Item = &'a Lattice<T, In>>,
+    In: Indexer,
 {
     type Item = (Point, T);
 

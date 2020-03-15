@@ -6,6 +6,7 @@ use std::ops::{Add, Div, Mul, Neg, Sub};
 
 // TODO: SIMD?
 
+/// A point in (i32, i32, i32).
 #[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct Point {
     pub x: i32,

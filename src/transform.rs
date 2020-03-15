@@ -88,6 +88,7 @@ pub const Z_STATIONARY_MIRROR_GROUP: [[[i32; 3]; 3]; 4] = [
     [[-1, 0, 0], [0, -1, 0], [0, 0, 1]],
 ];
 
+/// A linear map from (i32, i32, i32) to (i32, i32, i32).
 pub struct Transform {
     pub matrix: [[i32; 3]; 3],
 }
