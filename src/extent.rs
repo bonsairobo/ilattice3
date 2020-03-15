@@ -21,7 +21,7 @@ impl Add<Point> for Extent {
     type Output = Self;
 
     fn add(self, rhs: Point) -> Extent {
-        self.set_minimum(self.minimum + rhs)
+        self.with_minimum(self.minimum + rhs)
     }
 }
 
@@ -34,6 +34,8 @@ impl Sub<Point> for Extent {
 }
 
 impl Extent {
+    /// The extent with `minimum` as the least element and `world_sup` as the least upper bound of
+    /// the extent, or `minimum + size`.
     pub fn from_min_and_world_supremum(minimum: Point, world_sup: Point) -> Self {
         Self {
             minimum,
@@ -42,8 +44,9 @@ impl Extent {
         }
     }
 
-    pub fn from_min_and_world_max(minimum: Point, max: Point) -> Self {
-        let world_sup = max + [1, 1, 1].into();
+    /// The extent with `minimum` as the least element and `world_max` as the greatest element.
+    pub fn from_min_and_world_max(minimum: Point, world_max: Point) -> Self {
+        let world_sup = world_max + [1, 1, 1].into();
 
         Self {
             minimum,
@@ -52,8 +55,10 @@ impl Extent {
         }
     }
 
-    pub fn from_minimum_and_local_max(minimum: Point, max: Point) -> Self {
-        let local_sup = max + [1, 1, 1].into();
+    /// The extent with `minimum` as the least element and `local_max` as the greatest element in
+    /// local coordinates (relative to `minimum`).
+    pub fn from_minimum_and_local_max(minimum: Point, local_max: Point) -> Self {
+        let local_sup = local_max + [1, 1, 1].into();
 
         Self {
             minimum,
@@ -62,6 +67,8 @@ impl Extent {
         }
     }
 
+    /// The extent with `minimum` as the least element and `local_sup` as the least upper bound
+    /// in local coordinates (i.e. the size).
     pub fn from_min_and_local_supremum(minimum: Point, local_sup: Point) -> Self {
         Self {
             minimum,
@@ -80,6 +87,7 @@ impl Extent {
         Self::from_min_and_local_supremum(minimum, local_sup)
     }
 
+    /// Returns `self` after growing the size of the extent by `p`.
     pub fn add_to_supremum(&self, p: &Point) -> Self {
         let mut ret = *self;
         ret.local_sup = ret.local_sup + *p;
@@ -88,42 +96,48 @@ impl Extent {
         ret
     }
 
+    /// Change the size of `self` in-place.
     pub fn set_local_supremum(&mut self, new_sup: Point) {
         *self = Self::from_min_and_local_supremum(self.minimum, new_sup)
     }
 
+    /// Get the center of mass, rounded down to the nearest integer.
     pub fn get_center(&self) -> Point {
         (self.minimum + self.world_sup) / 2
     }
 
+    /// Get the least element.
     pub fn get_minimum(&self) -> Point {
         self.minimum
     }
 
+    /// Get the greatest element.
     pub fn get_world_max(&self) -> Point {
         self.world_sup - [1, 1, 1].into()
     }
 
+    /// Get the greatest element in local coordinates.
     pub fn get_local_max(&self) -> Point {
         self.local_sup - [1, 1, 1].into()
     }
 
+    /// Get the least upper bound in local coordinates (i.e. the size).
     pub fn get_local_supremum(&self) -> &Point {
         &self.local_sup
     }
 
+    /// Get the least upper bound.
     pub fn get_world_supremum(&self) -> &Point {
         &self.world_sup
     }
 
-    // TODO: the name is confusing, since it returns the result
     /// Translates the entire extent such that `min` is the new minimum.
-    pub fn set_minimum(&self, min: Point) -> Self {
+    pub fn with_minimum(&self, min: Point) -> Self {
         Extent::from_min_and_local_supremum(min, self.local_sup)
     }
 
-    // TODO: the name is confusing, since it returns the result
-    pub fn set_minimum_to_origin(&self) -> Self {
+    /// Translates the entire extent such that the origin `(0, 0, 0)` is the new minimum.
+    pub fn with_minimum_as_origin(&self) -> Self {
         *self - self.minimum
     }
 
@@ -140,12 +154,14 @@ impl Extent {
         ret.add_to_supremum(&(positive - negative))
     }
 
+    /// Grows (or shrinks for negative `r`) the extent symmetrically in each dimension by `2r`.
     pub fn radial_grow(&self, r: i32) -> Self {
         let grower = DirectionIndex::new([r; 6]);
 
         self.directional_grow(&grower)
     }
 
+    /// Grows the extent symmetrically in each dimension by `2r`.
     pub fn padded(&self, pad: u32) -> Self {
         self.radial_grow(pad as i32)
     }
@@ -157,26 +173,32 @@ impl Extent {
         (self.local_sup.x.max(0) * self.local_sup.y.max(0) * self.local_sup.z.max(0)) as usize
     }
 
+    /// Returns `true` iff `self` contains no points.
     pub fn is_empty(&self) -> bool {
         self.volume() == 0
     }
 
+    /// Translates `p` from local coordinates to world coordinates.
     pub fn local_point_from_world_point(&self, p: &Point) -> Point {
         *p - self.minimum
     }
 
+    /// Translates `p` from world coordinates to local coordinates.
     pub fn world_point_from_local_point(&self, p: &Point) -> Point {
         *p + self.minimum
     }
 
+    /// Returns true iff `self.get_minimum() + local_point` is an element of `self`.
     pub fn contains_local(&self, local_point: &Point) -> bool {
         Point::new(0, 0, 0) <= *local_point && *local_point < self.local_sup
     }
 
+    /// Returns true iff `world_point` is an element of `self`.
     pub fn contains_world(&self, world_point: &Point) -> bool {
         self.minimum <= *world_point && *world_point < self.world_sup
     }
 
+    /// Returns the overlapping points of `self` and `other`.
     pub fn intersection(&self, other: &Self) -> Self {
         let minimum = self.minimum.join(&other.minimum);
         let world_sup = self.world_sup.meet(&other.world_sup);
@@ -184,6 +206,7 @@ impl Extent {
         Self::from_min_and_world_supremum(minimum, world_sup)
     }
 
+    /// Returns true `iff` all points in `other` are also in `self`.
     pub fn is_subset(&self, other: &Self) -> bool {
         self.intersection(other) == *self
     }
@@ -230,6 +253,8 @@ impl Extent {
         extents.into_iter().filter(|e| !e.is_empty()).collect()
     }
 
+    /// Returns an iterator over the points on the boundary of `self` (those points adjacent to some
+    /// point not in `self`).
     pub fn iter_boundary_points(&self) -> impl Iterator<Item = Point> {
         self.get_boundary_extents()
             .into_iter()

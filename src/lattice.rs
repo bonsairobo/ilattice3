@@ -37,7 +37,7 @@ impl<T: Clone, I: Indexer> Lattice<T, I> {
     }
 
     pub fn set_minimum(&mut self, new_min: &Point) {
-        self.extent = self.extent.set_minimum(*new_min);
+        self.extent = self.extent.with_minimum(*new_min);
     }
 
     pub fn fill_with_indexer(indexer: I, extent: Extent, init_val: T) -> Self {
@@ -96,7 +96,9 @@ impl<T: Clone, I: Indexer> Lattice<T, I> {
     pub fn copy_extent_into_new_lattice(&self, extent: &Extent) -> Self {
         let volume = extent.volume();
         let mut values = Vec::with_capacity(volume);
-        unsafe { values.set_len(volume); }
+        unsafe {
+            values.set_len(volume);
+        }
         let mut copy = Lattice::new_with_indexer(*extent, self.indexer.clone(), values);
         Self::copy_extent(self, &mut copy, extent);
 
@@ -240,7 +242,10 @@ pub struct LatticeKeyValIterator<'a, T> {
 
 impl<'a, T> LatticeKeyValIterator<'a, T> {
     pub fn new(lattice: &'a Lattice<T>, extent_iter: ExtentIterator) -> Self {
-        Self { lattice, extent_iter }
+        Self {
+            lattice,
+            extent_iter,
+        }
     }
 }
 

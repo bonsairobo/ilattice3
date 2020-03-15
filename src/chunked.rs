@@ -1,5 +1,4 @@
-
-use crate::{bounding_extent, Extent, Lattice, Point, lattice::LatticeKeyValIterator};
+use crate::{bounding_extent, lattice::LatticeKeyValIterator, Extent, Lattice, Point};
 
 use std::collections::{hash_map, HashMap};
 
