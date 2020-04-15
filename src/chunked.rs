@@ -49,12 +49,20 @@ impl<T> ChunkedLattice<T> {
         Extent::from_min_and_local_supremum(min, local_sup)
     }
 
+    pub fn get_chunk(&self, key: &Point) -> Option<&Lattice<T>> {
+        self.map.get(key)
+    }
+
+    pub fn get_mut_chunk(&mut self, key: &Point) -> Option<&mut Lattice<T>> {
+        self.map.get_mut(key)
+    }
+
     pub fn get_chunk_containing_point(&self, point: &Point) -> Option<&Lattice<T>> {
-        self.map.get(&self.chunk_key(point))
+        self.get_chunk(&self.chunk_key(point))
     }
 
     pub fn get_mut_chunk_containing_point(&mut self, point: &Point) -> Option<&mut Lattice<T>> {
-        self.map.get_mut(&self.chunk_key(point))
+        self.get_mut_chunk(&self.chunk_key(point))
     }
 
     /// Returns an iterator over all points and corresponding values in the given extent. If chunks
