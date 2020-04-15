@@ -49,6 +49,14 @@ impl<T> ChunkedLattice<T> {
         Extent::from_min_and_local_supremum(min, local_sup)
     }
 
+    pub fn iter_chunks(&self) -> impl Iterator<Item = (&Point, &Lattice<T>)> {
+        self.map.iter()
+    }
+
+    pub fn iter_chunks_mut(&mut self) -> impl Iterator<Item = (&Point, &mut Lattice<T>)> {
+        self.map.iter_mut()
+    }
+
     pub fn get_chunk(&self, key: &Point) -> Option<&Lattice<T>> {
         self.map.get(key)
     }
