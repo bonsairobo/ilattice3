@@ -1,5 +1,7 @@
 use crate::{Extent, Point};
 
+use serde::{Deserialize, Serialize};
+
 /// All of the possible symmetries of a Lattice (octahedron).
 pub const OCTAHEDRAL_GROUP: [[[i32; 3]; 3]; 48] = [
     // Stationary X
@@ -89,6 +91,7 @@ pub const Z_STATIONARY_MIRROR_GROUP: [[[i32; 3]; 3]; 4] = [
 ];
 
 /// A linear map from (i32, i32, i32) to (i32, i32, i32).
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct Transform {
     pub matrix: [[i32; 3]; 3],
 }
