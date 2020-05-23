@@ -2,8 +2,10 @@ use crate::{Extent, Point};
 
 use serde::{Deserialize, Serialize};
 
+pub type Matrix = [[i32; 3]; 3];
+
 /// All of the possible symmetries of a Lattice (octahedron).
-pub const OCTAHEDRAL_GROUP: [[[i32; 3]; 3]; 48] = [
+pub const OCTAHEDRAL_GROUP: [Matrix; 48] = [
     // (x, y, z)
     [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
     [[1, 0, 0], [0, -1, 0], [0, 0, 1]],
@@ -66,7 +68,7 @@ pub const OCTAHEDRAL_GROUP: [[[i32; 3]; 3]; 48] = [
 ];
 
 /// Useful for keeping voxels "upright."
-pub const Z_STATIONARY_OCTAHEDRAL_GROUP: [[[i32; 3]; 3]; 8] = [
+pub const Z_STATIONARY_OCTAHEDRAL_GROUP: [Matrix; 8] = [
     [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
     [[-1, 0, 0], [0, 1, 0], [0, 0, 1]],
     [[1, 0, 0], [0, -1, 0], [0, 0, 1]],
@@ -80,7 +82,7 @@ pub const Z_STATIONARY_OCTAHEDRAL_GROUP: [[[i32; 3]; 3]; 8] = [
 /// A linear map from (i32, i32, i32) to (i32, i32, i32).
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct Transform {
-    pub matrix: [[i32; 3]; 3],
+    pub matrix: Matrix,
 }
 
 impl Transform {
