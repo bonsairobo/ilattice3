@@ -1,9 +1,10 @@
 use crate::{DirectionIndex, Point};
 
+use serde::{Deserialize, Serialize};
 use std::ops::{Add, Sub};
 
 /// A Cartesian product of 3 integer ranges: `[x_min..x_max] * [y_min..y_max] * [z_min..z_max]`.
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct Extent {
     /// Point in the extent that's lesser than all other points in the extent. In world coordinates,
     /// since the local minimum is always (0, 0, 0).

@@ -2,9 +2,11 @@ use crate::{
     bounding_extent, lattice::LatticeKeyValIterator, Extent, Indexer, Lattice, Point, YLevelsIndexer
 };
 
+use serde::{Deserialize, Serialize};
 use std::collections::{hash_map, HashMap};
 
 /// Stores a sparse lattice in chunks using a hash map.
+#[derive(Deserialize, Serialize)]
 pub struct ChunkedLattice<T> {
     chunk_size: Point,
     map: HashMap<Point, Lattice<T>>,

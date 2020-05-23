@@ -14,7 +14,7 @@ impl<C, I: StatelessIndexer> Tile<C, I> {
     pub fn new(data: Vec<C>) -> Self {
         Tile {
             data,
-            indexer: I::new(),
+            indexer: I::default(),
         }
     }
 }

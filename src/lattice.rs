@@ -1,9 +1,15 @@
 use crate::{Extent, ExtentIterator, Indexer, Point, StatelessIndexer, Transform, YLevelsIndexer};
 
+use serde::{Deserialize, Serialize};
+
 /// A map from points in an extent to some kind of data `T`.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Lattice<T, I = YLevelsIndexer> {
+    // Works if I: Default, which is true for I: StatelessIndexer.
+    #[serde(skip_deserializing)]
+    #[serde(skip_serializing)]
     indexer: I,
+
     extent: Extent,
     values: Vec<T>,
 }
@@ -121,7 +127,7 @@ impl<T, I: StatelessIndexer> Lattice<T, I> {
     pub fn new(extent: Extent, values: Vec<T>) -> Self {
         Lattice {
             extent,
-            indexer: I::new(),
+            indexer: I::default(),
             values,
         }
     }
@@ -135,7 +141,7 @@ impl<T, I: StatelessIndexer> Lattice<T, I> {
 
 impl<T: Clone, I: StatelessIndexer> Lattice<T, I> {
     pub fn fill(extent: Extent, init_val: T) -> Self {
-        Self::fill_with_indexer(I::new(), extent, init_val)
+        Self::fill_with_indexer(I::default(), extent, init_val)
     }
 }
 

@@ -12,19 +12,13 @@ pub trait Indexer: Clone {
 }
 
 /// Most `Indexer`s should not require state to be instantiated.
-pub trait StatelessIndexer: Indexer {
-    fn new() -> Self;
-}
+pub trait StatelessIndexer: Default + Indexer {}
 
 /// A standard `Indexer` that allows for layouts where XZ level sets are specified in order of Y.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub struct YLevelsIndexer;
 
-impl StatelessIndexer for YLevelsIndexer {
-    fn new() -> Self {
-        YLevelsIndexer {}
-    }
-}
+impl StatelessIndexer for YLevelsIndexer {}
 
 impl Indexer for YLevelsIndexer {
     fn index_from_local_point(s: &Point, p: &Point) -> usize {
@@ -48,16 +42,12 @@ impl Indexer for YLevelsIndexer {
 
 /// Same as the `YLevelsIndexer`, but periodic, i.e. indexing out of bounds will give the local
 /// modulus by the size of the extent.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub struct PeriodicYLevelsIndexer;
 
-impl PeriodicIndexer for PeriodicYLevelsIndexer {}
+impl StatelessIndexer for PeriodicYLevelsIndexer {}
 
-impl StatelessIndexer for PeriodicYLevelsIndexer {
-    fn new() -> Self {
-        PeriodicYLevelsIndexer {}
-    }
-}
+impl PeriodicIndexer for PeriodicYLevelsIndexer {}
 
 impl Indexer for PeriodicYLevelsIndexer {
     fn index_from_local_point(s: &Point, p: &Point) -> usize {
