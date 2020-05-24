@@ -163,6 +163,18 @@ pub const ALL_NORMALS: [Point; 6] = [
     Point { x: 0, y: 0, z: 1 },
 ];
 
+/// Returns a `Point` from ALL_NORMALS based on index of a 3-element array of components.
+/// I.e. `0 -> X, 1 -> Y, 2 -> Z`. Returns a negative normal iff `negative` is true.
+pub fn normal_from_component_index(index: usize, negative: bool) -> Point {
+    // This depends on the order of ALL_NORMALS.
+    let mut normal_i = 2 * (index + 1) - 1;
+    if negative {
+        normal_i -= 1;
+    }
+
+    ALL_NORMALS[normal_i]
+}
+
 /// Returns vector pointing in direction.
 impl From<Direction> for Point {
     fn from(d: Direction) -> Self {
@@ -252,5 +264,15 @@ mod tests {
         assert_eq!(Direction::PosY.negate(), Direction::NegY);
         assert_eq!(Direction::NegZ.negate(), Direction::PosZ);
         assert_eq!(Direction::PosZ.negate(), Direction::NegZ);
+    }
+
+    #[test]
+    fn test_normal_from_component_index() {
+        assert_eq!(normal_from_component_index(0, false), Normal::Axis(Direction::PosX).into());
+        assert_eq!(normal_from_component_index(0, true), Normal::Axis(Direction::NegX).into());
+        assert_eq!(normal_from_component_index(1, false), Normal::Axis(Direction::PosY).into());
+        assert_eq!(normal_from_component_index(1, true), Normal::Axis(Direction::NegY).into());
+        assert_eq!(normal_from_component_index(2, false), Normal::Axis(Direction::PosZ).into());
+        assert_eq!(normal_from_component_index(2, true), Normal::Axis(Direction::NegZ).into());
     }
 }
