@@ -28,8 +28,8 @@ pub use extent::{bounding_extent, Extent, ExtentIterator};
 pub use indexer::{Indexer, PeriodicYLevelsIndexer, StatelessIndexer, YLevelsIndexer};
 pub use lattice::{Lattice, LatticeKeyValIterator};
 pub use normal::{
-    normal_from_component_index, Direction, DirectionIndex, Normal, PlaneSpanInfo, ALL_DIRECTIONS,
-    ALL_NORMALS
+    closest_normal, normal_from_component_index, Direction, DirectionIndex, Normal, PlaneSpanInfo,
+    ALL_DIRECTIONS, ALL_NORMALS
 };
 pub use point::Point;
 pub use tile::Tile;

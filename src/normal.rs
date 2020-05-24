@@ -175,6 +175,19 @@ pub fn normal_from_component_index(index: usize, negative: bool) -> Point {
     ALL_NORMALS[normal_i]
 }
 
+/// Returns the normal vector with the smallest angle from `v`.
+pub fn closest_normal(v: &[f32; 3]) -> Point {
+    // Get the index and value of the largest vector component (by magnitude).
+    let (max_i, max_val): (usize, &f32) =
+        v
+            .iter()
+            .enumerate()
+            .max_by(|(_i, d1), (_j, d2)| d1.abs().partial_cmp(&d2.abs()).unwrap())
+            .unwrap();
+
+    normal_from_component_index(max_i, *max_val < 0.0)
+}
+
 /// Returns vector pointing in direction.
 impl From<Direction> for Point {
     fn from(d: Direction) -> Self {
@@ -274,5 +287,79 @@ mod tests {
         assert_eq!(normal_from_component_index(1, true), Normal::Axis(Direction::NegY).into());
         assert_eq!(normal_from_component_index(2, false), Normal::Axis(Direction::PosZ).into());
         assert_eq!(normal_from_component_index(2, true), Normal::Axis(Direction::NegZ).into());
+    }
+
+    #[test]
+    fn test_closest_face_only_one_nonzero() {
+        let input_vectors = [
+            [1.1, 0.0, 0.0],
+            [0.9, 0.0, 0.0],
+            [0.0, 1.1, 0.0],
+            [0.0, 0.9, 0.0],
+            [0.0, 0.0, 1.1],
+            [0.0, 0.0, 0.9],
+            [-1.1, 0.0, 0.0],
+            [-0.9, 0.0, 0.0],
+            [0.0, -1.1, 0.0],
+            [0.0, -0.9, 0.0],
+            [0.0, 0.0, -1.1],
+            [0.0, 0.0, -0.9],
+        ];
+
+        let expected_normals = [
+            [1, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+            [0, 0, 1],
+            [-1, 0, 0],
+            [-1, 0, 0],
+            [0, -1, 0],
+            [0, -1, 0],
+            [0, 0, -1],
+            [0, 0, -1],
+        ];
+
+        for (in_vector, expected_normal) in input_vectors.iter().zip(expected_normals.iter()) {
+            assert_eq!(closest_normal(&in_vector), (*expected_normal).into());
+        }
+    }
+
+    #[test]
+    fn test_closest_face_multiple_nonzero() {
+        let input_vectors = [
+            [1.1, 1.0, 0.0],
+            [1.1, 0.0, 1.0],
+            [1.0, 1.1, 0.0],
+            [0.0, 1.1, 1.0],
+            [1.0, 0.0, 1.1],
+            [0.0, 1.0, 1.1],
+            [-1.1, -1.0, 0.0],
+            [-1.1, 0.0, -1.0],
+            [-1.0, -1.1, 0.0],
+            [0.0, -1.1, -1.0],
+            [-1.0, 0.0, -1.1],
+            [0.0, -1.0, -1.1],
+        ];
+
+        let expected_normals = [
+            [1, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+            [0, 0, 1],
+            [-1, 0, 0],
+            [-1, 0, 0],
+            [0, -1, 0],
+            [0, -1, 0],
+            [0, 0, -1],
+            [0, 0, -1],
+        ];
+
+        for (in_vector, expected_normal) in input_vectors.iter().zip(expected_normals.iter()) {
+            assert_eq!(closest_normal(&in_vector), (*expected_normal).into());
+        }
     }
 }
