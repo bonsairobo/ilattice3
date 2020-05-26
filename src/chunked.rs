@@ -129,6 +129,20 @@ impl<'a, T> Iterator for ChunkKeyIterator<'a, T> {
     }
 }
 
+impl<T: Clone> ChunkedLattice<T> {
+    /// Get mutable data for point `p`. If `p` does not exist, the chunk will be filled with the
+    /// given `default` value.
+    pub fn get_mut_or_create(&mut self, p: &Point, default: T) -> &mut T {
+        let key = self.chunk_key(p);
+        let extent = self.extent_for_chunk_key(&key);
+
+        self.map
+            .entry(key)
+            .or_insert_with(|| Lattice::fill(extent, default))
+            .get_mut_world(p)
+    }
+}
+
 impl<T: Clone + Default> ChunkedLattice<T> {
     pub fn copy_lattice_into_chunks(&mut self, lattice: &Lattice<T>, fill_default: T) {
         for key in self.key_extent(&lattice.get_extent()) {
