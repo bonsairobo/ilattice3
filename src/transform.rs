@@ -1,6 +1,7 @@
 use crate::{Extent, Point};
 
 use serde::{Deserialize, Serialize};
+use std::ops::Mul;
 
 pub type Matrix = [[i32; 3]; 3];
 
@@ -116,5 +117,13 @@ impl Transform {
         }
 
         false
+    }
+}
+
+impl Mul<Point> for Transform {
+    type Output = Point;
+
+    fn mul(self, rhs: Point) -> Point {
+        self.apply_to_point(&rhs)
     }
 }
