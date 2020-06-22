@@ -111,6 +111,12 @@ impl Point {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 
+    pub fn squared_distance(&self, other: &Self) -> i32 {
+        let diff = *self - *other;
+
+        diff.dot(&diff)
+    }
+
     pub fn join(&self, other: &Self) -> Self {
         [
             max(self.x, other.x),
