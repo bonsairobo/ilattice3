@@ -7,6 +7,7 @@ mod extent;
 mod indexer;
 mod lattice;
 mod normal;
+mod palette;
 mod point;
 mod tile;
 mod transform;
@@ -29,8 +30,9 @@ pub use indexer::{Indexer, PeriodicYLevelsIndexer, StatelessIndexer, YLevelsInde
 pub use lattice::{Lattice, LatticeKeyValIterator};
 pub use normal::{
     closest_normal, normal_from_component_index, Direction, DirectionIndex, Normal, PlaneSpanInfo,
-    ALL_DIRECTIONS, ALL_NORMALS
+    ALL_DIRECTIONS, ALL_NORMALS,
 };
+pub use palette::{ChunkVoxels, ChunkVoxelsMut, ChunkedPaletteLattice, VoxelInfoPtr, NULL_VOXEL};
 pub use point::Point;
 pub use tile::Tile;
 pub use transform::{Matrix, Transform, OCTAHEDRAL_GROUP, Z_STATIONARY_OCTAHEDRAL_GROUP};
