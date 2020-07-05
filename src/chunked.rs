@@ -1,5 +1,6 @@
 use crate::{
-    bounding_extent, lattice::LatticeKeyValIterator, Extent, Indexer, Lattice, Point, YLevelsIndexer
+    bounding_extent, lattice::LatticeKeyValIterator, Extent, Indexer, Lattice, Point,
+    YLevelsIndexer,
 };
 
 use serde::{Deserialize, Serialize};
@@ -177,6 +178,12 @@ impl<T: Clone + Default> ChunkedLattice<T> {
 
     pub fn copy_into_new_lattice(&self) -> Lattice<T> {
         self.copy_extent_into_new_lattice(self.get_extent())
+    }
+
+    pub fn get_chunk_and_boundary(&self, chunk_key: &Point) -> Lattice<T> {
+        let extent = self.extent_for_chunk_key(chunk_key).padded(1);
+
+        self.copy_extent_into_new_lattice(extent)
     }
 }
 

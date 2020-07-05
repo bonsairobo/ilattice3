@@ -32,7 +32,10 @@ pub use normal::{
     closest_normal, normal_from_component_index, Direction, DirectionIndex, Normal, PlaneSpanInfo,
     ALL_DIRECTIONS, ALL_NORMALS,
 };
-pub use palette::{ChunkVoxels, ChunkVoxelsMut, ChunkedPaletteLattice, VoxelInfoPtr, NULL_VOXEL};
+pub use palette::{
+    ChunkVoxelsRef, ChunkVoxelsRefMut, ChunkedPaletteLattice, LatticeVoxels, VoxelInfoPtr,
+    NULL_VOXEL,
+};
 pub use point::Point;
 pub use tile::Tile;
 pub use transform::{Matrix, Transform, OCTAHEDRAL_GROUP, Z_STATIONARY_OCTAHEDRAL_GROUP};
