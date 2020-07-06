@@ -1,6 +1,6 @@
 use crate::{
-    bounding_extent, lattice::LatticeKeyValIterator, Extent, Indexer, Lattice, Point,
-    YLevelsIndexer,
+    bounding_extent, copy_extent, lattice::LatticeKeyValIterator, Extent, GetExtent, GetWorld,
+    GetWorldMut, Indexer, Lattice, Point, YLevelsIndexer,
 };
 
 use serde::{Deserialize, Serialize};
@@ -21,17 +21,6 @@ impl<T> ChunkedLattice<T> {
             chunk_size,
             map: HashMap::new(),
         }
-    }
-
-    pub fn get_extent(&self) -> Extent {
-        assert!(!self.map.is_empty());
-        let extrema_iter = self
-            .map
-            .values()
-            .map(|lat| lat.get_extent().get_world_max())
-            .chain(self.map.values().map(|lat| lat.get_extent().get_minimum()));
-
-        bounding_extent(extrema_iter)
     }
 
     pub fn chunk_key(&self, point: &Point) -> Point {
@@ -117,6 +106,19 @@ impl<T> ChunkedLattice<T> {
     }
 }
 
+impl<T> GetExtent for ChunkedLattice<T> {
+    fn get_extent(&self) -> Extent {
+        assert!(!self.map.is_empty());
+        let extrema_iter = self
+            .map
+            .values()
+            .map(|lat| lat.get_extent().get_world_max())
+            .chain(self.map.values().map(|lat| lat.get_extent().get_minimum()));
+
+        bounding_extent(extrema_iter)
+    }
+}
+
 /// An iterator over the chunk keys (sparse points in the space of chunk coordinates).
 pub struct ChunkKeyIterator<'a, T> {
     map_key_iter: hash_map::Keys<'a, Point, Lattice<T>>,
@@ -152,7 +154,7 @@ impl<T: Clone + Default> ChunkedLattice<T> {
                 .map
                 .entry(key)
                 .or_insert_with(|| Lattice::fill(chunk_extent, fill_default.clone()));
-            Lattice::copy_extent(
+            copy_extent(
                 lattice,
                 chunk,
                 &chunk_extent.intersection(&lattice.get_extent()),

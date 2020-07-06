@@ -1,4 +1,7 @@
-use crate::{Extent, ExtentIterator, Indexer, Point, StatelessIndexer, Transform, YLevelsIndexer};
+use crate::{
+    copy_extent, Extent, ExtentIterator, GetExtent, GetLocal, GetLocalMut, GetWorld, GetWorldMut,
+    Indexer, Point, StatelessIndexer, Transform, YLevelsIndexer,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -12,6 +15,24 @@ pub struct Lattice<T, I = YLevelsIndexer> {
 
     extent: Extent,
     values: Vec<T>,
+}
+
+impl<T, I> GetExtent for Lattice<T, I> {
+    fn get_extent(&self) -> Extent {
+        self.extent
+    }
+}
+
+impl<T, I: Indexer> GetLocal<T> for Lattice<T, I> {
+    fn get_local(&self, p: &Point) -> &T {
+        self.get_linear(self.index_from_local_point(p))
+    }
+}
+
+impl<T, I: Indexer> GetLocalMut<T> for Lattice<T, I> {
+    fn get_mut_local(&mut self, p: &Point) -> &mut T {
+        self.get_mut_linear(self.index_from_local_point(p))
+    }
 }
 
 impl<T: Clone, I: Indexer> Lattice<T, I> {
@@ -74,32 +95,6 @@ impl<T: Clone, I: Indexer> Lattice<T, I> {
         data
     }
 
-    pub fn fill_extent(&mut self, extent: &Extent, val: T) {
-        for p in extent {
-            *self.get_mut_world(&p) = val.clone();
-        }
-    }
-
-    pub fn copy_extent_to_position<S: From<T>, J: Indexer>(
-        src: &Self,
-        dst: &mut Lattice<S, J>,
-        dst_position: &Point,
-        extent: &Extent,
-    ) {
-        for p in extent {
-            let p_dst = *dst_position + p - extent.get_minimum();
-            *dst.get_mut_world(&p_dst) = src.get_world(&p).clone().into();
-        }
-    }
-
-    pub fn copy_extent<S: From<T>, J: Indexer>(
-        src: &Self,
-        dst: &mut Lattice<S, J>,
-        extent: &Extent,
-    ) {
-        Self::copy_extent_to_position(src, dst, &extent.get_minimum(), extent)
-    }
-
     pub fn copy_extent_into_new_lattice(&self, extent: &Extent) -> Self {
         let volume = extent.volume();
         let mut values = Vec::with_capacity(volume);
@@ -107,19 +102,9 @@ impl<T: Clone, I: Indexer> Lattice<T, I> {
             values.set_len(volume);
         }
         let mut copy = Lattice::new_with_indexer(*extent, self.indexer.clone(), values);
-        Self::copy_extent(self, &mut copy, extent);
+        copy_extent(self, &mut copy, extent);
 
         copy
-    }
-
-    pub fn map_extent<S, F, J>(src: &Self, dst: &mut Lattice<S, J>, extent: &Extent, f: F)
-    where
-        F: Fn(&T) -> S,
-        J: Indexer,
-    {
-        for p in extent {
-            *dst.get_mut_world(&p) = f(src.get_world(&p));
-        }
     }
 }
 
@@ -158,10 +143,6 @@ impl<T, I: Indexer> Lattice<T, I> {
         &self.indexer
     }
 
-    pub fn get_extent(&self) -> Extent {
-        self.extent
-    }
-
     pub fn get_linear(&self, index: usize) -> &T {
         &self.values[index]
     }
@@ -194,40 +175,6 @@ impl<T, I: Indexer> Lattice<T, I> {
 
     pub fn index_from_world_point(&self, p: &Point) -> usize {
         self.index_from_local_point(&self.extent.local_point_from_world_point(p))
-    }
-
-    pub fn get_world(&self, p: &Point) -> &T {
-        self.get_local(&self.extent.local_point_from_world_point(p))
-    }
-
-    pub fn get_mut_world(&mut self, p: &Point) -> &mut T {
-        self.get_mut_local(&self.extent.local_point_from_world_point(p))
-    }
-
-    pub fn all<F>(&self, extent: &Extent, f: F) -> bool
-    where
-        F: Fn(&T) -> bool,
-    {
-        for p in extent {
-            if !f(self.get_world(&p)) {
-                return false;
-            }
-        }
-
-        true
-    }
-
-    pub fn some<F>(&self, extent: &Extent, f: F) -> bool
-    where
-        F: Fn(&T) -> bool,
-    {
-        for p in extent {
-            if f(self.get_world(&p)) {
-                return true;
-            }
-        }
-
-        false
     }
 
     pub fn map<F, S>(&self, f: F) -> Lattice<S, I>
@@ -337,7 +284,7 @@ mod tests {
         let serial_extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), [2, 2, 2].into());
         let serialized = lattice.serialize_extent(&serial_extent);
         let serial_lattice = Lattice::<_, YLevelsIndexer>::new(serial_extent, serialized);
-        Lattice::copy_extent(&serial_lattice, &mut lattice, &serial_extent);
+        copy_extent(&serial_lattice, &mut lattice, &serial_extent);
 
         assert_eq!(orig_lattice, lattice);
     }

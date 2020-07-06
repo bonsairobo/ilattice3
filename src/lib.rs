@@ -4,6 +4,7 @@
 
 mod chunked;
 mod extent;
+mod generic_lattice;
 mod indexer;
 mod lattice;
 mod normal;
@@ -26,6 +27,10 @@ mod test_util;
 
 pub use chunked::{ChunkKeyIterator, ChunkedLattice, ChunkedLatticeIterator};
 pub use extent::{bounding_extent, Extent, ExtentIterator};
+pub use generic_lattice::{
+    copy_extent, copy_extent_to_position, fill_extent, map_extent, GetExtent, GetLocal,
+    GetLocalMut, GetWorld, GetWorldMut,
+};
 pub use indexer::{Indexer, PeriodicYLevelsIndexer, StatelessIndexer, YLevelsIndexer};
 pub use lattice::{Lattice, LatticeKeyValIterator};
 pub use normal::{

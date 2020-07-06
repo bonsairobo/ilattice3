@@ -1,4 +1,4 @@
-use crate::{Extent, Indexer, Lattice, Point};
+use crate::{Extent, GetExtent, Indexer, Lattice, Point};
 
 use dot_vox::*;
 

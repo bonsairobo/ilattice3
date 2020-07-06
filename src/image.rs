@@ -1,4 +1,4 @@
-use crate::{Extent, Indexer, Lattice};
+use crate::{Extent, GetExtent, Indexer, Lattice};
 
 use image::{Rgba, RgbaImage};
 

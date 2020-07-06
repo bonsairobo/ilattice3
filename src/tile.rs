@@ -1,4 +1,4 @@
-use crate::{Extent, Indexer, Lattice, StatelessIndexer, YLevelsIndexer};
+use crate::{copy_extent, Extent, Indexer, Lattice, StatelessIndexer, YLevelsIndexer};
 
 /// A container for voxels without any specified location, but they can be placed back into any
 /// extent with the same size as their original extent, and their spatial order will be preserved.
@@ -54,6 +54,6 @@ impl<C, I: Indexer> Tile<C, I> {
 impl<C: Clone, I: Clone + Indexer> Tile<C, I> {
     pub fn put_in_lattice<T: From<C>>(self, extent: &Extent, dst: &mut Lattice<T, I>) {
         let src = self.put_in_extent(dst.get_indexer().clone(), *extent);
-        Lattice::copy_extent(&src, dst, extent);
+        copy_extent(&src, dst, extent);
     }
 }

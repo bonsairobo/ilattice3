@@ -1,4 +1,4 @@
-use crate::{ChunkedLattice, IsEmpty, Lattice, Point};
+use crate::{ChunkedLattice, GetLocal, GetLocalMut, IsEmpty, Lattice, Point};
 use serde::{Deserialize, Serialize};
 
 /// One byte represents:
@@ -58,37 +58,47 @@ impl<'a, T> LatticeVoxels<'a, T> {
     pub fn get_pointed_voxel_info(&'a self, ptr: VoxelInfoPtr) -> &'a T {
         &self.infos[ptr.address()]
     }
+}
 
-    pub fn get_voxel_info(&'a self, point: &Point) -> &'a T {
-        self.get_pointed_voxel_info(*self.lattice.get_world(point))
+impl<'a, T> GetLocal<T> for LatticeVoxels<'a, T> {
+    fn get_local(&self, p: &Point) -> &T {
+        self.get_pointed_voxel_info(*self.lattice.get_local(p))
     }
 }
 
 /// A borrowed chunk and palette.
-pub struct ChunkVoxelsRefMut<'a, T> {
-    infos: &'a mut Vec<T>,
-    lattice: &'a mut Lattice<VoxelInfoPtr>,
-}
-
-impl<'a, T> ChunkVoxelsRefMut<'a, T> {
-    pub fn get_voxel_info_mut(&'a mut self, point: &Point) -> &'a mut T {
-        &mut self.infos[self.lattice.get_world(point).address()]
-    }
-}
-
-/// A mutably borrowed chunk and palette.
 pub struct ChunkVoxelsRef<'a, T> {
     infos: &'a Vec<T>,
     pub lattice: &'a Lattice<VoxelInfoPtr>,
 }
 
 impl<'a, T> ChunkVoxelsRef<'a, T> {
-    pub fn get_pointed_voxel_info(&'a self, ptr: VoxelInfoPtr) -> &'a T {
+    pub fn get_pointed_voxel_info(&self, ptr: VoxelInfoPtr) -> &T {
         &self.infos[ptr.address()]
     }
+}
 
-    pub fn get_voxel_info(&'a self, point: &Point) -> &'a T {
-        self.get_pointed_voxel_info(*self.lattice.get_world(point))
+impl<'a, T> GetLocal<T> for ChunkVoxelsRef<'a, T> {
+    fn get_local(&self, p: &Point) -> &T {
+        self.get_pointed_voxel_info(*self.lattice.get_local(p))
+    }
+}
+
+/// A mutably borrowed chunk and palette.
+pub struct ChunkVoxelsRefMut<'a, T> {
+    infos: &'a mut Vec<T>,
+    lattice: &'a mut Lattice<VoxelInfoPtr>,
+}
+
+impl<'a, T> ChunkVoxelsRefMut<'a, T> {
+    pub fn get_pointed_voxel_info_mut(&mut self, ptr: VoxelInfoPtr) -> &mut T {
+        &mut self.infos[ptr.address()]
+    }
+}
+
+impl<'a, T> GetLocalMut<T> for ChunkVoxelsRefMut<'a, T> {
+    fn get_mut_local(&mut self, p: &Point) -> &mut T {
+        self.get_pointed_voxel_info_mut(*self.lattice.get_local(p))
     }
 }
 
@@ -102,20 +112,6 @@ pub struct ChunkedPaletteLattice<T> {
 }
 
 impl<T> ChunkedPaletteLattice<T> {
-    pub fn get_voxel_info(&self, point: &Point) -> Option<&T> {
-        self.lattice
-            .get_world(point)
-            .cloned()
-            .map(move |ptr| &self.infos[ptr.address()])
-    }
-
-    pub fn get_voxel_info_mut(&mut self, point: &Point) -> Option<&mut T> {
-        self.lattice
-            .get_world(point)
-            .cloned()
-            .map(move |ptr| &mut self.infos[ptr.address()])
-    }
-
     pub fn get_chunk(&self, chunk_key: &Point) -> Option<ChunkVoxelsRef<T>> {
         let ChunkedPaletteLattice { lattice, infos } = self;
 
