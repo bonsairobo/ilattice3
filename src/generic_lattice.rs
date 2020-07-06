@@ -1,5 +1,22 @@
 use crate::{Extent, Point};
 
+/// Get the `Extent` for some `Lattice`-like type.
+pub trait GetExtent {
+    fn get_extent(&self) -> Extent;
+}
+
+/// Returns a reference to the data at point `p` in lattice-local coordinates, i.e. the minimum of
+/// the extent is [0, 0, 0].
+pub trait GetLocal<T> {
+    fn get_local(&self, p: &Point) -> &T;
+}
+
+/// Returns a mutable reference to the data at point `p` in lattice-local coordinates, i.e. the
+/// minimum of the extent is [0, 0, 0].
+pub trait GetLocalMut<T> {
+    fn get_mut_local(&mut self, p: &Point) -> &mut T;
+}
+
 /// Returns a reference to the data at point `p` in world coordinates.
 pub trait GetWorld<T> {
     fn get_world(&self, p: &Point) -> &T;
@@ -36,21 +53,12 @@ pub trait GetWorldMut<T> {
     fn get_mut_world(&mut self, p: &Point) -> &mut T;
 }
 
-/// Returns a reference to the data at point `p` in lattice-local coordinates, i.e. the minimum of
-/// the extent is [0, 0, 0].
-pub trait GetLocal<T> {
-    fn get_local(&self, p: &Point) -> &T;
+pub trait MaybeGetWorld<T> {
+    fn maybe_get_world(&self, p: &Point) -> Option<&T>;
 }
 
-/// Returns a mutable reference to the data at point `p` in lattice-local coordinates, i.e. the
-/// minimum of the extent is [0, 0, 0].
-pub trait GetLocalMut<T> {
-    fn get_mut_local(&mut self, p: &Point) -> &mut T;
-}
-
-/// Get the `Extent` for some `Lattice`-like type.
-pub trait GetExtent {
-    fn get_extent(&self) -> Extent;
+pub trait MaybeGetWorldMut<T> {
+    fn maybe_get_world_mut(&mut self, p: &Point) -> Option<&mut T>;
 }
 
 impl<L, T> GetWorld<T> for L

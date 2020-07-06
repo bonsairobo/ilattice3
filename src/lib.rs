@@ -29,7 +29,7 @@ pub use chunked::{ChunkKeyIterator, ChunkedLattice, ChunkedLatticeIterator};
 pub use extent::{bounding_extent, Extent, ExtentIterator};
 pub use generic_lattice::{
     copy_extent, copy_extent_to_position, fill_extent, map_extent, GetExtent, GetLocal,
-    GetLocalMut, GetWorld, GetWorldMut,
+    GetLocalMut, GetWorld, GetWorldMut, MaybeGetWorld, MaybeGetWorldMut,
 };
 pub use indexer::{Indexer, PeriodicYLevelsIndexer, StatelessIndexer, YLevelsIndexer};
 pub use lattice::{Lattice, LatticeKeyValIterator};
@@ -53,7 +53,7 @@ pub mod prelude {
     pub use crate::extent::{bounding_extent, Extent, ExtentIterator};
     pub use crate::generic_lattice::{
         copy_extent, copy_extent_to_position, fill_extent, map_extent, GetExtent, GetLocal,
-        GetLocalMut, GetWorld, GetWorldMut,
+        GetLocalMut, GetWorld, GetWorldMut, MaybeGetWorld, MaybeGetWorldMut,
     };
     pub use crate::lattice::{Lattice, LatticeKeyValIterator};
     pub use crate::point::Point;

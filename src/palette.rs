@@ -1,4 +1,7 @@
-use crate::{ChunkedLattice, GetLocal, GetLocalMut, IsEmpty, Lattice, Point};
+use crate::{
+    ChunkedLattice, Extent, GetExtent, GetLocal, GetLocalMut, IsEmpty, Lattice, MaybeGetWorld,
+    MaybeGetWorldMut, Point,
+};
 use serde::{Deserialize, Serialize};
 
 /// One byte represents:
@@ -75,6 +78,12 @@ pub struct ChunkVoxelsRef<'a, T> {
 impl<'a, T> ChunkVoxelsRef<'a, T> {
     pub fn get_pointed_voxel_info(&self, ptr: VoxelInfoPtr) -> &T {
         &self.infos[ptr.address()]
+    }
+}
+
+impl<'a, T> GetExtent for ChunkVoxelsRef<'a, T> {
+    fn get_extent(&self) -> Extent {
+        self.lattice.get_extent()
     }
 }
 
@@ -155,5 +164,22 @@ impl<T> ChunkedPaletteLattice<T> {
         self.lattice
             .chunk_keys()
             .map(move |chunk_key| (chunk_key, self.get_chunk_and_boundary(chunk_key)))
+    }
+}
+
+impl<T> MaybeGetWorld<T> for ChunkedPaletteLattice<T> {
+    fn maybe_get_world(&self, p: &Point) -> Option<&T> {
+        self.lattice
+            .maybe_get_world(p)
+            .map(|ptr| &self.infos[ptr.address()])
+    }
+}
+
+impl<T> MaybeGetWorldMut<T> for ChunkedPaletteLattice<T> {
+    fn maybe_get_world_mut(&mut self, p: &Point) -> Option<&mut T> {
+        self.lattice
+            .maybe_get_world(p)
+            .cloned()
+            .map(move |ptr| &mut self.infos[ptr.address()])
     }
 }

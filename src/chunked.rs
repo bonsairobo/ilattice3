@@ -1,6 +1,6 @@
 use crate::{
     bounding_extent, copy_extent, lattice::LatticeKeyValIterator, Extent, GetExtent, GetWorld,
-    GetWorldMut, Indexer, Lattice, Point, YLevelsIndexer,
+    GetWorldMut, Indexer, Lattice, MaybeGetWorld, MaybeGetWorldMut, Point, YLevelsIndexer,
 };
 
 use serde::{Deserialize, Serialize};
@@ -92,18 +92,6 @@ impl<T> ChunkedLattice<T> {
             map_key_iter: self.map.keys(),
         }
     }
-
-    /// Get the data for point `p` if `p` exists.
-    pub fn get_world(&self, p: &Point) -> Option<&T> {
-        self.get_chunk_containing_point(p)
-            .map(|chunk| chunk.get_world(p))
-    }
-
-    /// Get mutable data for point `p` if `p` exists.
-    pub fn get_mut_world(&mut self, p: &Point) -> Option<&mut T> {
-        self.get_mut_chunk_containing_point(p)
-            .map(|chunk| chunk.get_mut_world(p))
-    }
 }
 
 impl<T> GetExtent for ChunkedLattice<T> {
@@ -116,6 +104,20 @@ impl<T> GetExtent for ChunkedLattice<T> {
             .chain(self.map.values().map(|lat| lat.get_extent().get_minimum()));
 
         bounding_extent(extrema_iter)
+    }
+}
+
+impl<T> MaybeGetWorld<T> for ChunkedLattice<T> {
+    fn maybe_get_world(&self, p: &Point) -> Option<&T> {
+        self.get_chunk_containing_point(p)
+            .map(|chunk| chunk.get_world(p))
+    }
+}
+
+impl<T> MaybeGetWorldMut<T> for ChunkedLattice<T> {
+    fn maybe_get_world_mut(&mut self, p: &Point) -> Option<&mut T> {
+        self.get_mut_chunk_containing_point(p)
+            .map(|chunk| chunk.get_mut_world(p))
     }
 }
 
