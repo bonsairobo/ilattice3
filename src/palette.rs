@@ -63,6 +63,12 @@ impl<'a, T> LatticeVoxels<'a, T> {
     }
 }
 
+impl<'a, T> GetExtent for LatticeVoxels<'a, T> {
+    fn get_extent(&self) -> Extent {
+        self.lattice.get_extent()
+    }
+}
+
 impl<'a, T> GetLocal<T> for LatticeVoxels<'a, T> {
     fn get_local(&self, p: &Point) -> &T {
         self.get_pointed_voxel_info(*self.lattice.get_local(p))

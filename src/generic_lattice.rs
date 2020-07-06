@@ -50,6 +50,7 @@ pub trait GetWorld<T> {
 
 /// Returns a mutable reference to the data at point `p` in world coordinates.
 pub trait GetWorldMut<T> {
+    // TODO: make this get_world_mut
     fn get_mut_world(&mut self, p: &Point) -> &mut T;
 }
 
