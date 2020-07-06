@@ -48,3 +48,13 @@ pub use transform::{Matrix, Transform, OCTAHEDRAL_GROUP, Z_STATIONARY_OCTAHEDRAL
 pub trait IsEmpty: Eq + Sized {
     fn is_empty(&self) -> bool;
 }
+
+pub mod prelude {
+    pub use crate::extent::{bounding_extent, Extent, ExtentIterator};
+    pub use crate::generic_lattice::{
+        copy_extent, copy_extent_to_position, fill_extent, map_extent, GetExtent, GetLocal,
+        GetLocalMut, GetWorld, GetWorldMut,
+    };
+    pub use crate::lattice::{Lattice, LatticeKeyValIterator};
+    pub use crate::point::Point;
+}
