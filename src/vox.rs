@@ -54,12 +54,12 @@ impl<I: Indexer> VecLatticeMap<VoxColor, I> {
         } = &models[model_index];
         let size = Point::new(*x as i32, *y as i32, *z as i32);
         let extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), size);
-        let mut lattice = VecLatticeMap::fill_with_indexer(indexer, extent, EMPTY_VOX_COLOR);
+        let mut map = VecLatticeMap::fill_with_indexer(indexer, extent, EMPTY_VOX_COLOR);
         for Voxel { x, y, z, i } in voxels.into_iter() {
             let point = [*x as i32, *y as i32, *z as i32].into();
-            *lattice.get_local_ref_mut(&point) = *i as VoxColor;
+            *map.get_local_ref_mut(&point) = *i as VoxColor;
         }
 
-        lattice
+        map
     }
 }

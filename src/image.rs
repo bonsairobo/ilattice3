@@ -24,12 +24,12 @@ impl<I: Indexer> From<(&RgbaImage, I)> for VecLatticeMap<Rgba<u8>, I> {
     fn from((image, indexer): (&RgbaImage, I)) -> Self {
         let size = [image.width() as i32, image.height() as i32, 1].into();
         let extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), size);
-        let mut lattice = VecLatticeMap::fill_with_indexer(indexer, extent, Rgba([0; 4]));
+        let mut map = VecLatticeMap::fill_with_indexer(indexer, extent, Rgba([0; 4]));
         for (x, y, pixel) in image.enumerate_pixels() {
             let point = [x as i32, y as i32, 0].into();
-            *lattice.get_local_ref_mut(&point) = *pixel;
+            *map.get_local_ref_mut(&point) = *pixel;
         }
 
-        lattice
+        map
     }
 }

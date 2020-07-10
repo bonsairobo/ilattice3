@@ -35,18 +35,17 @@ impl<C, I: Indexer> Tile<C, I> {
 
     /// The primary constructor, copies the values in `extent` out of `lattice`, preserving the
     /// spatial structure.
-    pub fn get_from_lattice<G: Clone + Into<C>>(
-        lattice: &VecLatticeMap<G, I>,
+    pub fn get_from_map<G: Clone + Into<C>>(
+        map: &VecLatticeMap<G, I>,
         extent: &Extent,
     ) -> Tile<C, I> {
         Tile::new_with_indexer(
-            lattice
-                .serialize_extent(extent)
+            map.serialize_extent(extent)
                 .into_iter()
                 .map(|g| g.into())
                 .collect::<Vec<C>>(),
             *extent.get_local_supremum(),
-            lattice.get_indexer().clone(),
+            map.get_indexer().clone(),
         )
     }
 
@@ -59,7 +58,7 @@ impl<C, I: Indexer> Tile<C, I> {
 }
 
 impl<C: Clone, I: Clone + Indexer> Tile<C, I> {
-    pub fn put_in_lattice<T: From<C>>(self, extent: &Extent, dst: &mut VecLatticeMap<T, I>) {
+    pub fn put_in_map<T: From<C>>(self, extent: &Extent, dst: &mut VecLatticeMap<T, I>) {
         let src = self.put_in_extent(dst.get_indexer().clone(), *extent);
         copy_extent(&src, dst, extent);
     }

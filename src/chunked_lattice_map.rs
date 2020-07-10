@@ -1,5 +1,5 @@
 use crate::{
-    bounding_extent, copy_extent, prelude::*, vec_lattice_map::LatticeKeyValIterator, Extent,
+    bounding_extent, copy_extent, lattice_map::LatticeMapKeyValIterator, prelude::*, Extent,
     Indexer, Point, VecLatticeMap, YLevelsIndexer,
 };
 
@@ -73,22 +73,22 @@ impl<T> ChunkedLatticeMap<T> {
     pub fn iter_point_values(
         &self,
         extent: Extent,
-    ) -> ChunkedLatticeIterator<
+    ) -> ChunkedLatticeMapIterator<
         T,
         std::vec::IntoIter<&VecLatticeMap<T, YLevelsIndexer>>,
         YLevelsIndexer,
     > {
-        let lattices = self
+        let chunks = self
             .key_extent(&extent)
             .into_iter()
             .filter_map(|k| self.map.get(&k))
             .collect::<Vec<&VecLatticeMap<T>>>()
             .into_iter();
 
-        ChunkedLatticeIterator {
+        ChunkedLatticeMapIterator {
             full_extent: extent,
-            lattices,
-            lattice_iter: None,
+            chunks,
+            map_iter: None,
         }
     }
 
@@ -153,91 +153,92 @@ impl<T: Clone> ChunkedLatticeMap<T> {
 }
 
 impl<T: Clone + Default> ChunkedLatticeMap<T> {
-    pub fn copy_lattice_into_chunks(&mut self, lattice: &VecLatticeMap<T>, fill_default: T) {
-        for key in self.key_extent(&lattice.get_extent()) {
+    pub fn copy_map_into_chunks<V>(&mut self, map: &V, fill_default: T)
+    where
+        V: GetWorld<T> + GetExtent,
+    {
+        for key in self.key_extent(&map.get_extent()) {
             let chunk_extent = self.extent_for_chunk_key(&key);
             let chunk = self
                 .map
                 .entry(key)
                 .or_insert_with(|| VecLatticeMap::fill(chunk_extent, fill_default.clone()));
-            copy_extent(
-                lattice,
-                chunk,
-                &chunk_extent.intersection(&lattice.get_extent()),
-            );
+            copy_extent(map, chunk, &chunk_extent.intersection(&map.get_extent()));
         }
     }
 
     /// `fill_default` will be the value of points outside the given extent that nonetheless must be
     /// filled in each non-sparse chunk.
     pub fn fill_extent(&mut self, extent: &Extent, val: T, fill_default: T) {
-        let fill_lat = VecLatticeMap::fill(*extent, val);
-        self.copy_lattice_into_chunks(&fill_lat, fill_default);
+        let fill_lat = VecLatticeMap::<_, YLevelsIndexer>::fill(*extent, val);
+        self.copy_map_into_chunks(&fill_lat, fill_default);
     }
 
-    pub fn copy_extent_into_new_lattice(&self, extent: Extent) -> VecLatticeMap<T> {
-        let mut new_lattice = VecLatticeMap::fill(extent, T::default());
+    pub fn copy_extent_into_new_map(&self, extent: Extent) -> VecLatticeMap<T> {
+        let mut new_map = VecLatticeMap::fill(extent, T::default());
         for (p, val) in self.iter_point_values(extent) {
-            *new_lattice.get_world_ref_mut(&p) = val;
+            *new_map.get_world_ref_mut(&p) = val.clone();
         }
 
-        new_lattice
+        new_map
     }
 
-    pub fn copy_into_new_lattice(&self) -> VecLatticeMap<T> {
-        self.copy_extent_into_new_lattice(self.bounding_extent())
+    pub fn copy_into_new_map(&self) -> VecLatticeMap<T> {
+        self.copy_extent_into_new_map(self.bounding_extent())
     }
 
     pub fn get_chunk_and_boundary(&self, chunk_key: &Point) -> VecLatticeMap<T> {
         let extent = self.extent_for_chunk_key(chunk_key).padded(1);
 
-        self.copy_extent_into_new_lattice(extent)
+        self.copy_extent_into_new_map(extent)
     }
 }
 
 /// An iterator over the points in a `ChunkedLatticeMap`.
-pub struct ChunkedLatticeIterator<'a, T, It, In>
+pub struct ChunkedLatticeMapIterator<'a, T, It, In>
 where
     It: Iterator<Item = &'a VecLatticeMap<T, In>>,
+    In: 'a,
+    T: 'a,
 {
     full_extent: Extent,
-    lattices: It,
-    lattice_iter: Option<LatticeKeyValIterator<'a, T, In>>,
+    chunks: It,
+    map_iter: Option<LatticeMapKeyValIterator<'a, VecLatticeMap<T, In>, T>>,
 }
 
-impl<'a, T, It, In> ChunkedLatticeIterator<'a, T, It, In>
+impl<'a, T, It, In> ChunkedLatticeMapIterator<'a, T, It, In>
 where
-    T: Clone,
+    T: 'a,
     It: Iterator<Item = &'a VecLatticeMap<T, In>>,
-    In: Indexer,
+    In: 'a + Indexer,
 {
-    fn move_to_next_lattice(&mut self) {
-        self.lattice_iter = self.lattices.next().map(|l| {
-            let extent_iter = l.get_extent().intersection(&self.full_extent).into_iter();
+    fn move_to_next_chunk(&mut self) {
+        self.map_iter = self.chunks.next().map(|c| {
+            let extent_iter = c.get_extent().intersection(&self.full_extent).into_iter();
 
-            LatticeKeyValIterator::new(l, extent_iter)
+            LatticeMapKeyValIterator::new(c, extent_iter)
         });
     }
 }
 
-impl<'a, T, It, In> Iterator for ChunkedLatticeIterator<'a, T, It, In>
+impl<'a, T, It, In> Iterator for ChunkedLatticeMapIterator<'a, T, It, In>
 where
-    T: Clone,
+    T: 'a,
     It: Iterator<Item = &'a VecLatticeMap<T, In>>,
-    In: Indexer,
+    In: 'a + Indexer,
 {
-    type Item = (Point, T);
+    type Item = (Point, &'a T);
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.lattice_iter.is_none() {
-            self.move_to_next_lattice();
+        if self.map_iter.is_none() {
+            self.move_to_next_chunk();
         }
 
         let mut next = None;
-        while let Some(i) = &mut self.lattice_iter {
+        while let Some(i) = &mut self.map_iter {
             let n = i.next();
             if n.is_none() {
-                self.move_to_next_lattice();
+                self.move_to_next_chunk();
             } else {
                 next = n;
                 break;
@@ -261,21 +262,28 @@ mod tests {
     use crate::test_util::assert_elements_eq;
 
     #[test]
-    fn test_chunked_lattice_iterator() {
+    fn test_chunked_map_iterator() {
         // All points less than [0, 0, 0] in the query extent will have value 1.
-        let sublattice1 =
-            VecLatticeMap::fill(Extent::from_center_and_radius([-7, -7, -7].into(), 7), 1);
+        let submap1 = VecLatticeMap::<_, YLevelsIndexer>::fill(
+            Extent::from_center_and_radius([-7, -7, -7].into(), 7),
+            1,
+        );
         // Only [1, 1, 1] with have value 2 in the query extent.
-        let sublattice2 =
-            VecLatticeMap::fill(Extent::from_center_and_radius([8, 8, 8].into(), 7), 2);
+        let submap2 = VecLatticeMap::<_, YLevelsIndexer>::fill(
+            Extent::from_center_and_radius([8, 8, 8].into(), 7),
+            2,
+        );
         // All other point values will not change (stay 0).
 
-        let mut chunked_lattice: ChunkedLatticeMap<u32> = ChunkedLatticeMap::new([4, 4, 4].into());
-        chunked_lattice.copy_lattice_into_chunks(&sublattice1, 0);
-        chunked_lattice.copy_lattice_into_chunks(&sublattice2, 0);
+        let mut chunked_map: ChunkedLatticeMap<u32> = ChunkedLatticeMap::new([4, 4, 4].into());
+        chunked_map.copy_map_into_chunks(&submap1, 0);
+        chunked_map.copy_map_into_chunks(&submap2, 0);
 
         let query_extent = Extent::from_center_and_radius([0, 0, 0].into(), 1);
-        let points: Vec<_> = chunked_lattice.iter_point_values(query_extent).collect();
+        let points: Vec<_> = chunked_map
+            .iter_point_values(query_extent)
+            .map(|(p, i)| (p, *i))
+            .collect();
 
         assert_elements_eq(
             &points,

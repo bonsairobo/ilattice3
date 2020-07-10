@@ -1,4 +1,4 @@
-use crate::{GetExtent, Point};
+use crate::{extent::ExtentIterator, GetExtent, Point};
 
 use std::borrow::Borrow;
 
@@ -158,3 +158,34 @@ where
 // There are more blanket impls I would like once Rust has specialization:
 // - MaybeGetX for any GetX that just always returns Some
 // - GetWorld<T> for any GetWorldRef<T> where T: Clone
+
+/// An iterator over the points and data in a map.
+pub struct LatticeMapKeyValIterator<'a, V, T> {
+    map: &'a V,
+    extent_iter: ExtentIterator,
+    marker: std::marker::PhantomData<T>,
+}
+
+impl<'a, V, T> LatticeMapKeyValIterator<'a, V, T> {
+    pub fn new(map: &'a V, extent_iter: ExtentIterator) -> Self {
+        Self {
+            map,
+            extent_iter,
+            marker: Default::default(),
+        }
+    }
+}
+
+impl<'a, V, T> Iterator for LatticeMapKeyValIterator<'a, V, T>
+where
+    V: GetWorldRef<T>,
+    T: 'a,
+{
+    type Item = (Point, &'a T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.extent_iter
+            .next()
+            .map(|p| (p, self.map.get_world_ref(&p)))
+    }
+}

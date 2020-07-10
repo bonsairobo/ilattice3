@@ -289,23 +289,7 @@ impl Extent {
 
 /// Get the `Extent` for some bounded lattice map.
 pub trait GetExtent {
-    // TODO: make this return &Extent
-    fn get_extent(&self) -> Extent;
-}
-
-/// Returns the smallest extent containing all of the given points.
-pub fn bounding_extent<I>(points: I) -> Extent
-where
-    I: Iterator<Item = Point>,
-{
-    let mut min_point = Point::new(std::i32::MAX, std::i32::MAX, std::i32::MAX);
-    let mut max_point = Point::new(std::i32::MIN, std::i32::MIN, std::i32::MIN);
-    for p in points {
-        min_point = min_point.meet(&p);
-        max_point = max_point.join(&p);
-    }
-
-    Extent::from_min_and_world_max(min_point, max_point)
+    fn get_extent(&self) -> &Extent;
 }
 
 /// An iterator over all points in an extent (in no specific order).
@@ -372,6 +356,22 @@ impl IntoIterator for Extent {
     }
 }
 
+/// Returns the smallest extent containing all of the given points.
+pub fn bounding_extent<I>(points: I) -> Extent
+where
+    I: Iterator<Item = Point>,
+{
+    let mut min_point = Point::new(std::i32::MAX, std::i32::MAX, std::i32::MAX);
+    let mut max_point = Point::new(std::i32::MIN, std::i32::MIN, std::i32::MIN);
+    for p in points {
+        min_point = min_point.meet(&p);
+        max_point = max_point.join(&p);
+    }
+
+    Extent::from_min_and_world_max(min_point, max_point)
+}
+
+/// Overwrites the `extent` in `dst` with a mapped version of `extent` in `src`.
 pub fn map_extent<'a, B, T, R, S, D, F>(src: &'a S, dst: &mut D, extent: &Extent, f: F)
 where
     F: Fn(&T) -> R,
@@ -384,6 +384,7 @@ where
     }
 }
 
+/// Writes the same value `val` to all points in `extent`.
 pub fn fill_extent<T, D>(dst: &mut D, extent: &Extent, val: T)
 where
     T: Clone,
@@ -394,6 +395,8 @@ where
     }
 }
 
+/// Copies values of `src` at all points in `extent` to `dst`, starting at the minimum
+/// `dsp_position`.
 pub fn copy_extent_to_position<T, R, S, D>(
     src: &S,
     dst: &mut D,
@@ -411,6 +414,7 @@ pub fn copy_extent_to_position<T, R, S, D>(
     }
 }
 
+/// Copies values of `src` at all points in `extent` to the same points in `dst`.
 pub fn copy_extent<T, R, S, D>(src: &S, dst: &mut D, extent: &Extent)
 where
     T: Clone,
@@ -421,6 +425,7 @@ where
     copy_extent_to_position(src, dst, &extent.get_minimum(), extent)
 }
 
+/// Returns `true` iff `f(map(p))` is true for all `p` in `extent`.
 pub fn all<'a, M, T, B, F>(map: &'a M, extent: &Extent, f: F) -> bool
 where
     F: Fn(&T) -> bool,
@@ -436,6 +441,7 @@ where
     true
 }
 
+/// Returns `true` iff `f(map(p))` is true for any `p` in `extent`.
 pub fn some<'a, M, T, B, F>(map: &'a M, extent: &Extent, f: F) -> bool
 where
     F: Fn(&T) -> bool,

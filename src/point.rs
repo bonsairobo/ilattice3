@@ -158,8 +158,8 @@ impl Point {
     }
 }
 
-/// This particular partial order allows us to say that a lattice L contains a point iff
-/// p is GEQ the minimum of L and p is LEQ the maximum of L.
+/// This particular partial order allows us to say that an extent E contains a point iff
+/// p is GEQ the minimum of E and p is LEQ the maximum of E.
 impl PartialOrd for Point {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         if self < other {

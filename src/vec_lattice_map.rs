@@ -1,6 +1,6 @@
 use crate::{
-    copy_extent, prelude::*, Extent, ExtentIterator, Indexer, StatelessIndexer, Transform,
-    YLevelsIndexer,
+    copy_extent, lattice_map::LatticeMapKeyValIterator, prelude::*, Extent, Indexer,
+    StatelessIndexer, Transform, YLevelsIndexer,
 };
 
 use serde::{Deserialize, Serialize};
@@ -18,8 +18,8 @@ pub struct VecLatticeMap<T, I = YLevelsIndexer> {
 }
 
 impl<T, I> GetExtent for VecLatticeMap<T, I> {
-    fn get_extent(&self) -> Extent {
-        self.extent
+    fn get_extent(&self) -> &Extent {
+        &self.extent
     }
 }
 
@@ -41,101 +41,6 @@ impl<T, I: Indexer> GetLocalRef<T> for VecLatticeMap<T, I> {
 impl<T, I: Indexer> GetLocalRefMut<T> for VecLatticeMap<T, I> {
     fn get_local_ref_mut(&mut self, p: &Point) -> &mut T {
         self.get_linear_ref_mut(self.index_from_local_point(p))
-    }
-}
-
-impl<T: Clone, I: Indexer> VecLatticeMap<T, I> {
-    /// Map every point by `tfm`. This function will assert `tfm.is_octahedral` in debug mode.
-    pub fn apply_octahedral_transform(&self, tfm: &Transform) -> Self {
-        debug_assert!(tfm.is_octahedral());
-
-        let extent = self.get_extent();
-        let volume = extent.volume();
-
-        let tfm_extent = tfm.apply_to_extent(&extent);
-
-        let mut new_values = Vec::with_capacity(volume);
-        unsafe {
-            new_values.set_len(volume);
-        }
-        let mut tfm_lattice = Self::new_with_indexer(tfm_extent, self.indexer.clone(), new_values);
-
-        // PERF: this is not the most efficient, but it is very simple.
-        for p in extent {
-            let tfm_p = tfm.apply_to_point(&p);
-            *tfm_lattice.get_world_ref_mut(&tfm_p) = self.get_world(&p);
-        }
-
-        tfm_lattice
-    }
-
-    pub fn translate(&mut self, delta: &Point) {
-        self.extent = self.extent + *delta;
-    }
-
-    pub fn set_minimum(&mut self, new_min: &Point) {
-        self.extent = self.extent.with_minimum(*new_min);
-    }
-
-    pub fn fill_with_indexer(indexer: I, extent: Extent, init_val: T) -> Self {
-        VecLatticeMap {
-            extent,
-            indexer,
-            values: vec![init_val; extent.volume()],
-        }
-    }
-
-    /// Returns a vec of the data in `extent`, ordered linearly by `I: Indexer`. A lattice
-    /// can be recreated from the vec using `VecLatticeMap::<T, I>::new_with_indexer`.
-    pub fn serialize_extent(&self, extent: &Extent) -> Vec<T> {
-        let num_elements = extent.volume();
-        let mut data = Vec::with_capacity(num_elements);
-        unsafe {
-            data.set_len(num_elements);
-        }
-        for p in extent {
-            let i = I::index_from_local_point(
-                extent.get_local_supremum(),
-                &extent.local_point_from_world_point(&p),
-            );
-            data[i] = self.get_world(&p);
-        }
-
-        data
-    }
-
-    pub fn copy_extent_into_new_lattice(&self, extent: &Extent) -> Self {
-        let volume = extent.volume();
-        let mut values = Vec::with_capacity(volume);
-        unsafe {
-            values.set_len(volume);
-        }
-        let mut copy = VecLatticeMap::new_with_indexer(*extent, self.indexer.clone(), values);
-        copy_extent(self, &mut copy, extent);
-
-        copy
-    }
-}
-
-impl<T, I: StatelessIndexer> VecLatticeMap<T, I> {
-    pub fn new(extent: Extent, values: Vec<T>) -> Self {
-        VecLatticeMap {
-            extent,
-            indexer: I::default(),
-            values,
-        }
-    }
-
-    pub fn new_at_origin(sup: Point, values: Vec<T>) -> Self {
-        let extent = Extent::from_min_and_world_supremum([0, 0, 0].into(), sup);
-
-        Self::new(extent, values)
-    }
-}
-
-impl<T: Clone, I: StatelessIndexer> VecLatticeMap<T, I> {
-    pub fn fill(extent: Extent, init_val: T) -> Self {
-        Self::fill_with_indexer(I::default(), extent, init_val)
     }
 }
 
@@ -176,44 +81,129 @@ impl<T, I: Indexer> VecLatticeMap<T, I> {
         self.index_from_local_point(&self.extent.local_point_from_world_point(p))
     }
 
+    pub fn translate(&mut self, delta: &Point) {
+        self.extent = self.extent + *delta;
+    }
+
+    pub fn set_minimum(&mut self, new_min: &Point) {
+        self.extent = self.extent.with_minimum(*new_min);
+    }
+
     pub fn map<F, S>(&self, f: F) -> VecLatticeMap<S, I>
     where
         F: Fn(&T) -> S,
     {
         VecLatticeMap::new_with_indexer(
-            self.get_extent(),
+            *self.get_extent(),
             self.indexer.clone(),
             self.values.iter().map(f).collect(),
         )
     }
 
-    pub fn iter(&self) -> LatticeKeyValIterator<T, I> {
-        LatticeKeyValIterator::new(self, self.extent.into_iter())
+    pub fn iter(&self) -> LatticeMapKeyValIterator<VecLatticeMap<T, I>, T> {
+        LatticeMapKeyValIterator::new(self, self.extent.into_iter())
     }
 }
 
-/// An iterator over the points and data in a lattice.
-pub struct LatticeKeyValIterator<'a, T, I> {
-    lattice: &'a VecLatticeMap<T, I>,
-    extent_iter: ExtentIterator,
-}
-
-impl<'a, T, I: Indexer> LatticeKeyValIterator<'a, T, I> {
-    pub fn new(lattice: &'a VecLatticeMap<T, I>, extent_iter: ExtentIterator) -> Self {
-        Self {
-            lattice,
-            extent_iter,
+impl<T, I: StatelessIndexer> VecLatticeMap<T, I> {
+    pub fn new(extent: Extent, values: Vec<T>) -> Self {
+        VecLatticeMap {
+            extent,
+            indexer: I::default(),
+            values,
         }
     }
+
+    pub fn new_at_origin(sup: Point, values: Vec<T>) -> Self {
+        let extent = Extent::from_min_and_world_supremum([0, 0, 0].into(), sup);
+
+        Self::new(extent, values)
+    }
 }
 
-impl<'a, T: Clone, I: Indexer> Iterator for LatticeKeyValIterator<'a, T, I> {
-    type Item = (Point, T);
+impl<T: Clone, I: Indexer> VecLatticeMap<T, I> {
+    /// Map every point by `tfm`. This function will assert `tfm.is_octahedral` in debug mode.
+    pub fn apply_octahedral_transform(&self, tfm: &Transform) -> Self {
+        debug_assert!(tfm.is_octahedral());
 
-    fn next(&mut self) -> Option<Self::Item> {
-        self.extent_iter
-            .next()
-            .map(|p| (p, self.lattice.get_world_ref(&p).clone()))
+        let extent = self.get_extent();
+        let volume = extent.volume();
+
+        let tfm_extent = tfm.apply_to_extent(&extent);
+
+        let mut new_values = Vec::with_capacity(volume);
+        unsafe {
+            new_values.set_len(volume);
+        }
+        let mut tfm_map = Self::new_with_indexer(tfm_extent, self.indexer.clone(), new_values);
+
+        // PERF: this is not the most efficient, but it is very simple.
+        for p in extent {
+            let tfm_p = tfm.apply_to_point(&p);
+            *tfm_map.get_world_ref_mut(&tfm_p) = self.get_world(&p);
+        }
+
+        tfm_map
+    }
+
+    pub fn fill_with_indexer(indexer: I, extent: Extent, init_val: T) -> Self {
+        VecLatticeMap {
+            extent,
+            indexer,
+            values: vec![init_val; extent.volume()],
+        }
+    }
+
+    /// Returns a vec of the data in `extent`, ordered linearly by `I: Indexer`. A map
+    /// can be recreated from the vec using `VecLatticeMap::<T, I>::new_with_indexer`.
+    pub fn serialize_extent(&self, extent: &Extent) -> Vec<T> {
+        let num_elements = extent.volume();
+        let mut data = Vec::with_capacity(num_elements);
+        unsafe {
+            data.set_len(num_elements);
+        }
+        for p in extent {
+            let i = I::index_from_local_point(
+                extent.get_local_supremum(),
+                &extent.local_point_from_world_point(&p),
+            );
+            data[i] = self.get_world(&p);
+        }
+
+        data
+    }
+
+    pub fn copy_extent_into_new_map(&self, extent: &Extent) -> Self {
+        let volume = extent.volume();
+        let mut values = Vec::with_capacity(volume);
+        unsafe {
+            values.set_len(volume);
+        }
+        let mut copy = VecLatticeMap::new_with_indexer(*extent, self.indexer.clone(), values);
+        copy_extent(self, &mut copy, extent);
+
+        copy
+    }
+}
+
+impl<T: Clone, I: StatelessIndexer> VecLatticeMap<T, I> {
+    pub fn fill(extent: Extent, init_val: T) -> Self {
+        Self::fill_with_indexer(I::default(), extent, init_val)
+    }
+
+    pub fn copy_from_map<V>(map: &V, extent: &Extent) -> Self
+    where
+        V: GetWorld<T>,
+    {
+        let volume = extent.volume();
+        let mut values = Vec::with_capacity(volume);
+        unsafe {
+            values.set_len(volume);
+        }
+        let mut copy = VecLatticeMap::new(*extent, values);
+        copy_extent(map, &mut copy, extent);
+
+        copy
     }
 }
 
@@ -232,20 +222,20 @@ mod tests {
     #[test]
     fn test_periodic_indexer() {
         let extent = Extent::from_min_and_local_supremum([-1, -1, -1].into(), [3, 3, 3].into());
-        let mut lattice = VecLatticeMap::<_, PeriodicYLevelsIndexer>::fill(extent, (0, 0, 0));
+        let mut map = VecLatticeMap::<_, PeriodicYLevelsIndexer>::fill(extent, (0, 0, 0));
         for p in &extent {
-            *lattice.get_world_ref_mut(&p) = (p.x, p.y, p.z);
+            *map.get_world_ref_mut(&p) = (p.x, p.y, p.z);
         }
 
-        assert_eq!(lattice.get_world(&[-1, -1, -1].into()), (-1, -1, -1));
+        assert_eq!(map.get_world(&[-1, -1, -1].into()), (-1, -1, -1));
 
-        assert_eq!(lattice.get_world(&[-2, -1, -1].into()), (1, -1, -1));
-        assert_eq!(lattice.get_world(&[-1, -2, -1].into()), (-1, 1, -1));
-        assert_eq!(lattice.get_world(&[-1, -1, -2].into()), (-1, -1, 1));
+        assert_eq!(map.get_world(&[-2, -1, -1].into()), (1, -1, -1));
+        assert_eq!(map.get_world(&[-1, -2, -1].into()), (-1, 1, -1));
+        assert_eq!(map.get_world(&[-1, -1, -2].into()), (-1, -1, 1));
 
-        assert_eq!(lattice.get_world(&[-3, -1, -1].into()), (0, -1, -1));
-        assert_eq!(lattice.get_world(&[-1, -3, -1].into()), (-1, 0, -1));
-        assert_eq!(lattice.get_world(&[-1, -1, -3].into()), (-1, -1, 0));
+        assert_eq!(map.get_world(&[-3, -1, -1].into()), (0, -1, -1));
+        assert_eq!(map.get_world(&[-1, -3, -1].into()), (-1, 0, -1));
+        assert_eq!(map.get_world(&[-1, -1, -3].into()), (-1, -1, 0));
     }
 
     #[test]
@@ -272,20 +262,20 @@ mod tests {
     }
 
     #[test]
-    fn test_serialized_extent_back_to_lattice() {
+    fn test_serialized_extent_back_to_map() {
         let extent = Extent::from_min_and_local_supremum([-1, -1, -1].into(), [3, 3, 3].into());
-        let mut lattice = VecLatticeMap::<_, YLevelsIndexer>::fill(extent, (0, 0, 0));
+        let mut map = VecLatticeMap::<_, YLevelsIndexer>::fill(extent, (0, 0, 0));
         for p in &extent {
-            *lattice.get_world_ref_mut(&p) = (p.x, p.y, p.z);
+            *map.get_world_ref_mut(&p) = (p.x, p.y, p.z);
         }
-        let orig_lattice = lattice.clone();
+        let orig_map = map.clone();
 
         let serial_extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), [2, 2, 2].into());
-        let serialized = lattice.serialize_extent(&serial_extent);
-        let serial_lattice = VecLatticeMap::<_, YLevelsIndexer>::new(serial_extent, serialized);
-        copy_extent(&serial_lattice, &mut lattice, &serial_extent);
+        let serialized = map.serialize_extent(&serial_extent);
+        let serial_map = VecLatticeMap::<_, YLevelsIndexer>::new(serial_extent, serialized);
+        copy_extent(&serial_map, &mut map, &serial_extent);
 
-        assert_eq!(orig_lattice, lattice);
+        assert_eq!(orig_map, map);
     }
 
     #[test]
@@ -294,15 +284,15 @@ mod tests {
         let tfm = Transform { matrix };
 
         let extent = Extent::from_min_and_local_supremum([-1, -1, -1].into(), [3, 3, 3].into());
-        let mut lattice = VecLatticeMap::<_, YLevelsIndexer>::fill(extent, (0, 0, 0));
+        let mut map = VecLatticeMap::<_, YLevelsIndexer>::fill(extent, (0, 0, 0));
         for p in &extent {
-            *lattice.get_world_ref_mut(&p) = (p.x, p.y, p.z);
+            *map.get_world_ref_mut(&p) = (p.x, p.y, p.z);
         }
 
-        let orig_lattice = lattice.clone();
-        let tfm_lattice = lattice.apply_octahedral_transform(&tfm);
+        let orig_map = map.clone();
+        let tfm_map = map.apply_octahedral_transform(&tfm);
 
-        assert_eq!(orig_lattice, tfm_lattice);
+        assert_eq!(orig_map, tfm_map);
     }
 
     #[test]
@@ -312,21 +302,21 @@ mod tests {
 
         let orig_extent =
             Extent::from_min_and_local_supremum([-2, -2, -2].into(), [3, 3, 3].into());
-        let mut orig_lattice = VecLatticeMap::<_, YLevelsIndexer>::fill(orig_extent, (0, 0, 0));
+        let mut orig_map = VecLatticeMap::<_, YLevelsIndexer>::fill(orig_extent, (0, 0, 0));
         for p in &orig_extent {
-            *orig_lattice.get_world_ref_mut(&p) = (p.x, p.y, p.z);
+            *orig_map.get_world_ref_mut(&p) = (p.x, p.y, p.z);
         }
 
-        let tfm_lattice = orig_lattice.apply_octahedral_transform(&tfm);
+        let tfm_map = orig_map.apply_octahedral_transform(&tfm);
 
         let manual_tfm_extent =
             Extent::from_min_and_local_supremum([0, -2, -2].into(), [3, 3, 3].into());
-        let mut manual_tfm_lattice = VecLatticeMap::fill(manual_tfm_extent, (0, 0, 0));
+        let mut manual_tfm_map = VecLatticeMap::fill(manual_tfm_extent, (0, 0, 0));
         for p in &manual_tfm_extent {
-            *manual_tfm_lattice.get_world_ref_mut(&p) = (-p.x, p.y, p.z);
+            *manual_tfm_map.get_world_ref_mut(&p) = (-p.x, p.y, p.z);
         }
 
-        assert_eq!(tfm_lattice, manual_tfm_lattice);
+        assert_eq!(tfm_map, manual_tfm_map);
     }
 
     #[test]
@@ -335,49 +325,49 @@ mod tests {
         let tfm = Transform { matrix };
 
         let orig_extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), [1, 2, 3].into());
-        let mut orig_lattice = VecLatticeMap::<_, YLevelsIndexer>::fill(orig_extent, (0, 0, 0));
+        let mut orig_map = VecLatticeMap::<_, YLevelsIndexer>::fill(orig_extent, (0, 0, 0));
         for p in &orig_extent {
-            *orig_lattice.get_world_ref_mut(&p) = (p.x, p.y, p.z);
+            *orig_map.get_world_ref_mut(&p) = (p.x, p.y, p.z);
         }
 
-        let tfm_lattice = orig_lattice.apply_octahedral_transform(&tfm);
+        let tfm_map = orig_map.apply_octahedral_transform(&tfm);
 
         let manual_tfm_extent =
             Extent::from_min_and_local_supremum([0, 0, 0].into(), [2, 1, 3].into());
-        let mut manual_tfm_lattice = VecLatticeMap::fill(manual_tfm_extent, (0, 0, 0));
+        let mut manual_tfm_map = VecLatticeMap::fill(manual_tfm_extent, (0, 0, 0));
         for p in &manual_tfm_extent {
             // Have to do the inverse rotation here.
-            *manual_tfm_lattice.get_world_ref_mut(&p) = (-p.y, p.x, p.z);
+            *manual_tfm_map.get_world_ref_mut(&p) = (-p.y, p.x, p.z);
         }
 
-        assert_eq!(tfm_lattice, manual_tfm_lattice);
+        assert_eq!(tfm_map, manual_tfm_map);
     }
 
     #[test]
-    fn test_rotationally_symmetric_lattice_serializes_equivalently() {
+    fn test_rotationally_symmetric_map_serializes_equivalently() {
         let orig_extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), [2, 2, 2].into());
         let bottom_extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), [2, 2, 1].into());
         let top_extent = Extent::from_min_and_local_supremum([0, 0, 1].into(), [2, 2, 1].into());
-        let mut orig_lattice = VecLatticeMap::<_, YLevelsIndexer>::fill(orig_extent, 0);
+        let mut orig_map = VecLatticeMap::<_, YLevelsIndexer>::fill(orig_extent, 0);
         for p in &bottom_extent {
-            *orig_lattice.get_world_ref_mut(&p) = 1;
+            *orig_map.get_world_ref_mut(&p) = 1;
         }
         for p in &top_extent {
-            *orig_lattice.get_world_ref_mut(&p) = 2;
+            *orig_map.get_world_ref_mut(&p) = 2;
         }
 
-        let orig_serial = orig_lattice.serialize_extent(&orig_extent);
+        let orig_serial = orig_map.serialize_extent(&orig_extent);
 
         let matrix = [[0, 1, 0], [-1, 0, 0], [0, 0, 1]];
         let tfm = Transform { matrix };
 
         // Apply successive rotations and make sure the serialization is always the same.
-        let mut prev_lattice = orig_lattice;
+        let mut prev_map = orig_map;
         for _ in 0..4 {
-            let tfm_lattice = prev_lattice.apply_octahedral_transform(&tfm);
-            let tfm_serial = tfm_lattice.serialize_extent(&tfm_lattice.get_extent());
+            let tfm_map = prev_map.apply_octahedral_transform(&tfm);
+            let tfm_serial = tfm_map.serialize_extent(&tfm_map.get_extent());
             assert_eq!(tfm_serial, orig_serial);
-            prev_lattice = tfm_lattice;
+            prev_map = tfm_map;
         }
     }
 }
