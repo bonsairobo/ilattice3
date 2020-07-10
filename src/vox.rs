@@ -1,8 +1,8 @@
-use crate::{Extent, GetExtent, Indexer, Lattice, Point};
+use crate::{prelude::*, Extent, Indexer, Point, VecLatticeMap};
 
 use dot_vox::*;
 
-impl<I: Indexer> Into<DotVoxData> for Lattice<VoxColor, I> {
+impl<I: Indexer> Into<DotVoxData> for VecLatticeMap<VoxColor, I> {
     fn into(self: Self) -> DotVoxData {
         let size = *self.get_extent().get_local_supremum();
         // Voxel coordinates are limited to u8.
@@ -18,7 +18,7 @@ impl<I: Indexer> Into<DotVoxData> for Lattice<VoxColor, I> {
 
         let mut voxels = Vec::new();
         for p in &self.get_extent() {
-            let i = *self.get_local(&p);
+            let i = self.get_local(&p);
             if i != EMPTY_VOX_COLOR {
                 assert!(i <= std::u8::MAX as VoxColor);
                 let i = i as u8;
@@ -45,7 +45,7 @@ impl<I: Indexer> Into<DotVoxData> for Lattice<VoxColor, I> {
 pub type VoxColor = u16;
 pub const EMPTY_VOX_COLOR: VoxColor = std::u8::MAX as u16 + 1;
 
-impl<I: Indexer> Lattice<VoxColor, I> {
+impl<I: Indexer> VecLatticeMap<VoxColor, I> {
     pub fn from_vox_with_indexer(indexer: I, data: &DotVoxData, model_index: usize) -> Self {
         let DotVoxData { models, .. } = data;
         let Model {
@@ -54,10 +54,10 @@ impl<I: Indexer> Lattice<VoxColor, I> {
         } = &models[model_index];
         let size = Point::new(*x as i32, *y as i32, *z as i32);
         let extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), size);
-        let mut lattice = Lattice::fill_with_indexer(indexer, extent, EMPTY_VOX_COLOR);
+        let mut lattice = VecLatticeMap::fill_with_indexer(indexer, extent, EMPTY_VOX_COLOR);
         for Voxel { x, y, z, i } in voxels.into_iter() {
             let point = [*x as i32, *y as i32, *z as i32].into();
-            *lattice.get_mut_local(&point) = *i as VoxColor;
+            *lattice.get_local_ref_mut(&point) = *i as VoxColor;
         }
 
         lattice

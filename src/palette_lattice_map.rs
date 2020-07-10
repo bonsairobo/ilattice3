@@ -1,7 +1,4 @@
-use crate::{
-    ChunkedLattice, Extent, GetExtent, GetLocal, GetLocalMut, IsEmpty, Lattice, MaybeGetWorld,
-    MaybeGetWorldMut, Point,
-};
+use crate::{prelude::*, ChunkedLatticeMap, Extent, IsEmpty, Point, VecLatticeMap};
 use serde::{Deserialize, Serialize};
 
 /// One byte represents:
@@ -51,10 +48,10 @@ impl IsEmpty for VoxelInfoPtr {
     }
 }
 
-/// An owned `Lattice` with a borrowed palette. The `Lattice` does not need to be a chunk.
+/// An owned `VecLatticeMap` with a borrowed palette. The `VecLatticeMap` does not need to be a chunk.
 pub struct LatticeVoxels<'a, T> {
     infos: &'a Vec<T>,
-    pub lattice: Lattice<VoxelInfoPtr>,
+    pub lattice: VecLatticeMap<VoxelInfoPtr>,
 }
 
 impl<'a, T> LatticeVoxels<'a, T> {
@@ -69,16 +66,16 @@ impl<'a, T> GetExtent for LatticeVoxels<'a, T> {
     }
 }
 
-impl<'a, T> GetLocal<T> for LatticeVoxels<'a, T> {
-    fn get_local(&self, p: &Point) -> &T {
-        self.get_pointed_voxel_info(*self.lattice.get_local(p))
+impl<'a, T> GetLocalRef<T> for LatticeVoxels<'a, T> {
+    fn get_local_ref(&self, p: &Point) -> &T {
+        self.get_pointed_voxel_info(self.lattice.get_local(p))
     }
 }
 
 /// A borrowed chunk and palette.
 pub struct ChunkVoxelsRef<'a, T> {
     infos: &'a Vec<T>,
-    pub lattice: &'a Lattice<VoxelInfoPtr>,
+    pub lattice: &'a VecLatticeMap<VoxelInfoPtr>,
 }
 
 impl<'a, T> ChunkVoxelsRef<'a, T> {
@@ -93,16 +90,16 @@ impl<'a, T> GetExtent for ChunkVoxelsRef<'a, T> {
     }
 }
 
-impl<'a, T> GetLocal<T> for ChunkVoxelsRef<'a, T> {
-    fn get_local(&self, p: &Point) -> &T {
-        self.get_pointed_voxel_info(*self.lattice.get_local(p))
+impl<'a, T> GetLocalRef<T> for ChunkVoxelsRef<'a, T> {
+    fn get_local_ref(&self, p: &Point) -> &T {
+        self.get_pointed_voxel_info(self.lattice.get_local(p))
     }
 }
 
 /// A mutably borrowed chunk and palette.
 pub struct ChunkVoxelsRefMut<'a, T> {
     infos: &'a mut Vec<T>,
-    lattice: &'a mut Lattice<VoxelInfoPtr>,
+    lattice: &'a mut VecLatticeMap<VoxelInfoPtr>,
 }
 
 impl<'a, T> ChunkVoxelsRefMut<'a, T> {
@@ -111,24 +108,30 @@ impl<'a, T> ChunkVoxelsRefMut<'a, T> {
     }
 }
 
-impl<'a, T> GetLocalMut<T> for ChunkVoxelsRefMut<'a, T> {
-    fn get_mut_local(&mut self, p: &Point) -> &mut T {
-        self.get_pointed_voxel_info_mut(*self.lattice.get_local(p))
+impl<'a, T> GetExtent for ChunkVoxelsRefMut<'a, T> {
+    fn get_extent(&self) -> Extent {
+        self.lattice.get_extent()
     }
 }
 
-/// A `ChunkedLattice` that stores voxel data efficiently using palette compression.
+impl<'a, T> GetLocalRefMut<T> for ChunkVoxelsRefMut<'a, T> {
+    fn get_local_ref_mut(&mut self, p: &Point) -> &mut T {
+        self.get_pointed_voxel_info_mut(self.lattice.get_local(p))
+    }
+}
+
+/// A `ChunkedLatticeMap` that stores voxel data efficiently using palette compression.
 #[derive(Deserialize, Serialize)]
-pub struct ChunkedPaletteLattice<T> {
+pub struct ChunkedPaletteLatticeMap<T> {
     /// The palette of voxels that can be used in the lattice.
     pub infos: Vec<T>,
     /// Which voxels are used at specific points of the lattice.
-    pub lattice: ChunkedLattice<VoxelInfoPtr>,
+    pub lattice: ChunkedLatticeMap<VoxelInfoPtr>,
 }
 
-impl<T> ChunkedPaletteLattice<T> {
+impl<T> ChunkedPaletteLatticeMap<T> {
     pub fn get_chunk(&self, chunk_key: &Point) -> Option<ChunkVoxelsRef<T>> {
-        let ChunkedPaletteLattice { lattice, infos } = self;
+        let ChunkedPaletteLatticeMap { lattice, infos } = self;
 
         lattice
             .get_chunk(chunk_key)
@@ -136,7 +139,7 @@ impl<T> ChunkedPaletteLattice<T> {
     }
 
     pub fn get_chunk_mut(&mut self, chunk_key: &Point) -> Option<ChunkVoxelsRefMut<T>> {
-        let ChunkedPaletteLattice { lattice, infos } = self;
+        let ChunkedPaletteLatticeMap { lattice, infos } = self;
 
         lattice
             .get_mut_chunk(chunk_key)
@@ -156,7 +159,7 @@ impl<T> ChunkedPaletteLattice<T> {
     }
 
     pub fn get_chunk_and_boundary(&self, chunk_key: &Point) -> LatticeVoxels<T> {
-        let ChunkedPaletteLattice { lattice, infos } = self;
+        let ChunkedPaletteLatticeMap { lattice, infos } = self;
 
         let chunk_and_boundary = lattice.get_chunk_and_boundary(chunk_key);
 
@@ -173,18 +176,18 @@ impl<T> ChunkedPaletteLattice<T> {
     }
 }
 
-impl<T> MaybeGetWorld<T> for ChunkedPaletteLattice<T> {
-    fn maybe_get_world(&self, p: &Point) -> Option<&T> {
+impl<T> MaybeGetWorldRef<T> for ChunkedPaletteLatticeMap<T> {
+    fn maybe_get_world_ref(&self, p: &Point) -> Option<&T> {
         self.lattice
-            .maybe_get_world(p)
+            .maybe_get_world_ref(p)
             .map(|ptr| &self.infos[ptr.address()])
     }
 }
 
-impl<T> MaybeGetWorldMut<T> for ChunkedPaletteLattice<T> {
-    fn maybe_get_world_mut(&mut self, p: &Point) -> Option<&mut T> {
+impl<T> MaybeGetWorldRefMut<T> for ChunkedPaletteLatticeMap<T> {
+    fn maybe_get_world_ref_mut(&mut self, p: &Point) -> Option<&mut T> {
         self.lattice
-            .maybe_get_world(p)
+            .maybe_get_world_ref_mut(p)
             .cloned()
             .map(move |ptr| &mut self.infos[ptr.address()])
     }

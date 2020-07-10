@@ -1,7 +1,10 @@
-use crate::{DirectionIndex, Point};
+use crate::{prelude::*, DirectionIndex, Point};
 
 use serde::{Deserialize, Serialize};
-use std::ops::{Add, Sub};
+use std::{
+    borrow::Borrow,
+    ops::{Add, Sub},
+};
 
 /// A Cartesian product of 3 integer ranges: `[x_min..x_max] * [y_min..y_max] * [z_min..z_max]`.
 #[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
@@ -284,6 +287,12 @@ impl Extent {
     }
 }
 
+/// Get the `Extent` for some bounded lattice map.
+pub trait GetExtent {
+    // TODO: make this return &Extent
+    fn get_extent(&self) -> Extent;
+}
+
 /// Returns the smallest extent containing all of the given points.
 pub fn bounding_extent<I>(points: I) -> Extent
 where
@@ -361,6 +370,85 @@ impl IntoIterator for Extent {
     fn into_iter(self) -> Self::IntoIter {
         ExtentIterator::new(self)
     }
+}
+
+pub fn map_extent<'a, B, T, R, S, D, F>(src: &'a S, dst: &mut D, extent: &Extent, f: F)
+where
+    F: Fn(&T) -> R,
+    B: Borrow<T>,
+    S: GetWorldBorrowable<'a, T, B>,
+    D: GetWorldRefMut<R>,
+{
+    for p in extent {
+        *dst.get_world_ref_mut(&p) = f(src.get_world_borrowable(&p).borrow());
+    }
+}
+
+pub fn fill_extent<T, D>(dst: &mut D, extent: &Extent, val: T)
+where
+    T: Clone,
+    D: GetWorldRefMut<T>,
+{
+    for p in extent {
+        *dst.get_world_ref_mut(&p) = val.clone();
+    }
+}
+
+pub fn copy_extent_to_position<T, R, S, D>(
+    src: &S,
+    dst: &mut D,
+    dst_position: &Point,
+    extent: &Extent,
+) where
+    T: Clone,
+    R: From<T>,
+    S: GetWorld<T>,
+    D: GetWorldRefMut<R>,
+{
+    for p in extent {
+        let p_dst = *dst_position + p - extent.get_minimum();
+        *dst.get_world_ref_mut(&p_dst) = src.get_world(&p).into();
+    }
+}
+
+pub fn copy_extent<T, R, S, D>(src: &S, dst: &mut D, extent: &Extent)
+where
+    T: Clone,
+    R: From<T>,
+    S: GetWorld<T>,
+    D: GetWorldRefMut<R>,
+{
+    copy_extent_to_position(src, dst, &extent.get_minimum(), extent)
+}
+
+pub fn all<'a, M, T, B, F>(map: &'a M, extent: &Extent, f: F) -> bool
+where
+    F: Fn(&T) -> bool,
+    B: Borrow<T>,
+    M: GetWorldBorrowable<'a, T, B>,
+{
+    for p in extent {
+        if !f(map.get_world_borrowable(&p).borrow()) {
+            return false;
+        }
+    }
+
+    true
+}
+
+pub fn some<'a, M, T, B, F>(map: &'a M, extent: &Extent, f: F) -> bool
+where
+    F: Fn(&T) -> bool,
+    B: Borrow<T>,
+    M: GetWorldBorrowable<'a, T, B>,
+{
+    for p in extent {
+        if f(map.get_world_borrowable(&p).borrow()) {
+            return true;
+        }
+    }
+
+    false
 }
 
 // ████████╗███████╗███████╗████████╗███████╗
