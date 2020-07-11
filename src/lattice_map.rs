@@ -1,39 +1,47 @@
+//! A bunch of common traits for the various kinds of lattice maps.
+
 use crate::{extent::ExtentIterator, GetExtent, Point};
 
 use std::borrow::Borrow;
 
 /// Returns the data at point `p` in lattice-local coordinates, i.e. relative to some
 /// fixed origin.
-pub trait GetLocal<T> {
-    fn get_local(&self, p: &Point) -> T;
+pub trait GetLocal {
+    type Data;
+    fn get_local(&self, p: &Point) -> Self::Data;
 }
 
 /// Returns a reference to the data at point `p` in lattice-local coordinates, i.e. relative to some
 /// fixed origin.
-pub trait GetLocalRef<T> {
-    fn get_local_ref(&self, p: &Point) -> &T;
+pub trait GetLocalRef {
+    type Data;
+    fn get_local_ref(&self, p: &Point) -> &Self::Data;
 }
 
 /// Returns a mutable reference to the data at point `p` in lattice-local coordinates, i.e. relative
 /// to some fixed origin.
-pub trait GetLocalRefMut<T> {
-    fn get_local_ref_mut(&mut self, p: &Point) -> &mut T;
+pub trait GetLocalRefMut {
+    type Data;
+    fn get_local_ref_mut(&mut self, p: &Point) -> &mut Self::Data;
 }
 
 /// Returns the data at point `p` in world coordinates, i.e. the origin is [0, 0, 0].
-pub trait GetWorld<T> {
-    fn get_world(&self, p: &Point) -> T;
+pub trait GetWorld {
+    type Data;
+    fn get_world(&self, p: &Point) -> Self::Data;
 }
 
 /// Returns a reference to the data at point `p` in world coordinates, i.e. the origin is [0, 0, 0].
-pub trait GetWorldRef<T> {
-    fn get_world_ref(&self, p: &Point) -> &T;
+pub trait GetWorldRef {
+    type Data;
+    fn get_world_ref(&self, p: &Point) -> &Self::Data;
 }
 
 /// Returns a mutable reference to the data at point `p` in world coordinates, i.e. the origin is
 /// [0, 0, 0].
-pub trait GetWorldRefMut<T> {
-    fn get_world_ref_mut(&mut self, p: &Point) -> &mut T;
+pub trait GetWorldRefMut {
+    type Data;
+    fn get_world_ref_mut(&mut self, p: &Point) -> &mut Self::Data;
 }
 
 /// Returns some type that can be borrowed at the point `p`. Mostly an implementation detail for
@@ -47,16 +55,19 @@ where
         'b: 'a;
 }
 
-pub trait MaybeGetWorld<T> {
-    fn maybe_get_world(&self, p: &Point) -> Option<T>;
+pub trait MaybeGetWorld {
+    type Data;
+    fn maybe_get_world(&self, p: &Point) -> Option<Self::Data>;
 }
 
-pub trait MaybeGetWorldRef<T> {
-    fn maybe_get_world_ref(&self, p: &Point) -> Option<&T>;
+pub trait MaybeGetWorldRef {
+    type Data;
+    fn maybe_get_world_ref(&self, p: &Point) -> Option<&Self::Data>;
 }
 
-pub trait MaybeGetWorldRefMut<T> {
-    fn maybe_get_world_ref_mut(&mut self, p: &Point) -> Option<&mut T>;
+pub trait MaybeGetWorldRefMut {
+    type Data;
+    fn maybe_get_world_ref_mut(&mut self, p: &Point) -> Option<&mut Self::Data>;
 }
 
 //   _     _             _        _
@@ -65,21 +76,23 @@ pub trait MaybeGetWorldRefMut<T> {
 //  | |_) | | (_| | | | |   <  __/ |_\__ \
 //  |_.__/|_|\__,_|_| |_|_|\_\___|\__|___/
 
-impl<M, T> GetWorld<T> for M
+impl<M, T> GetWorld for M
 where
-    M: GetLocal<T> + GetExtent,
+    M: GetLocal<Data = T> + GetExtent,
 {
-    fn get_world(&self, p: &Point) -> T {
+    type Data = T;
+    fn get_world(&self, p: &Point) -> Self::Data {
         let p_local = self.get_extent().local_point_from_world_point(p);
 
         self.get_local(&p_local)
     }
 }
 
-impl<M, T> GetWorldRef<T> for M
+impl<M, T> GetWorldRef for M
 where
-    M: GetLocalRef<T> + GetExtent,
+    M: GetLocalRef<Data = T> + GetExtent,
 {
+    type Data = T;
     fn get_world_ref(&self, p: &Point) -> &T {
         let p_local = self.get_extent().local_point_from_world_point(p);
 
@@ -87,10 +100,11 @@ where
     }
 }
 
-impl<M, T> GetWorldRefMut<T> for M
+impl<M, T> GetWorldRefMut for M
 where
-    M: GetLocalRefMut<T> + GetExtent,
+    M: GetLocalRefMut<Data = T> + GetExtent,
 {
+    type Data = T;
     fn get_world_ref_mut(&mut self, p: &Point) -> &mut T {
         let p_local = self.get_extent().local_point_from_world_point(p);
 
@@ -100,7 +114,7 @@ where
 
 impl<'a, M, T> GetWorldBorrowable<'a, T, T> for M
 where
-    M: GetWorld<T>,
+    M: GetWorld<Data = T>,
 {
     fn get_world_borrowable<'b: 'a>(&'b self, p: &Point) -> T {
         self.get_world(p)
@@ -109,17 +123,18 @@ where
 
 impl<'a, M, T> GetWorldBorrowable<'a, T, &'a T> for M
 where
-    M: GetWorldRef<T>,
+    M: GetWorldRef<Data = T>,
 {
     fn get_world_borrowable<'b: 'a>(&'b self, p: &Point) -> &'a T {
         self.get_world_ref(p)
     }
 }
 
-impl<M, T> MaybeGetWorld<T> for M
+impl<M, T> MaybeGetWorld for M
 where
-    M: GetWorld<T> + GetExtent,
+    M: GetWorld<Data = T> + GetExtent,
 {
+    type Data = T;
     fn maybe_get_world(&self, p: &Point) -> Option<T> {
         if self.get_extent().contains_world(p) {
             Some(self.get_world(p))
@@ -129,10 +144,11 @@ where
     }
 }
 
-impl<M, T> MaybeGetWorldRef<T> for M
+impl<M, T> MaybeGetWorldRef for M
 where
-    M: GetWorldRef<T> + GetExtent,
+    M: GetWorldRef<Data = T> + GetExtent,
 {
+    type Data = T;
     fn maybe_get_world_ref(&self, p: &Point) -> Option<&T> {
         if self.get_extent().contains_world(p) {
             Some(self.get_world_ref(p))
@@ -142,10 +158,11 @@ where
     }
 }
 
-impl<M, T> MaybeGetWorldRefMut<T> for M
+impl<M, T> MaybeGetWorldRefMut for M
 where
-    M: GetWorldRefMut<T> + GetExtent,
+    M: GetWorldRefMut<Data = T> + GetExtent,
 {
+    type Data = T;
     fn maybe_get_world_ref_mut(&mut self, p: &Point) -> Option<&mut T> {
         if self.get_extent().contains_world(p) {
             Some(self.get_world_ref_mut(p))
@@ -178,7 +195,7 @@ impl<'a, V, T> LatticeMapKeyValIterator<'a, V, T> {
 
 impl<'a, V, T> Iterator for LatticeMapKeyValIterator<'a, V, T>
 where
-    V: GetWorldRef<T>,
+    V: GetWorldRef<Data = T>,
     T: 'a,
 {
     type Item = (Point, &'a T);
@@ -187,5 +204,23 @@ where
         self.extent_iter
             .next()
             .map(|p| (p, self.map.get_world_ref(&p)))
+    }
+}
+
+/// Wraps any `V: GetExtent + GetWorldRef<T>` to make it `IntoIterator`.
+pub struct LatticeMapIter<V>(pub V);
+
+// This impl requires that `GetWorldRef` has an associated `Data` type, since otherwise `T` would be
+// unconstrained.
+impl<'a, V, T> IntoIterator for LatticeMapIter<&'a V>
+where
+    V: GetExtent + GetWorldRef<Data = T>,
+    T: 'a,
+{
+    type Item = (Point, &'a T);
+    type IntoIter = LatticeMapKeyValIterator<'a, V, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        LatticeMapKeyValIterator::new(&self.0, self.0.get_extent().into_iter())
     }
 }

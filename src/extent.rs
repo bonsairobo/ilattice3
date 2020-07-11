@@ -377,7 +377,7 @@ where
     F: Fn(&T) -> R,
     B: Borrow<T>,
     S: GetWorldBorrowable<'a, T, B>,
-    D: GetWorldRefMut<R>,
+    D: GetWorldRefMut<Data = R>,
 {
     for p in extent {
         *dst.get_world_ref_mut(&p) = f(src.get_world_borrowable(&p).borrow());
@@ -388,7 +388,7 @@ where
 pub fn fill_extent<T, D>(dst: &mut D, extent: &Extent, val: T)
 where
     T: Clone,
-    D: GetWorldRefMut<T>,
+    D: GetWorldRefMut<Data = T>,
 {
     for p in extent {
         *dst.get_world_ref_mut(&p) = val.clone();
@@ -405,8 +405,8 @@ pub fn copy_extent_to_position<T, R, S, D>(
 ) where
     T: Clone,
     R: From<T>,
-    S: GetWorld<T>,
-    D: GetWorldRefMut<R>,
+    S: GetWorld<Data = T>,
+    D: GetWorldRefMut<Data = R>,
 {
     for p in extent {
         let p_dst = *dst_position + p - extent.get_minimum();
@@ -419,8 +419,8 @@ pub fn copy_extent<T, R, S, D>(src: &S, dst: &mut D, extent: &Extent)
 where
     T: Clone,
     R: From<T>,
-    S: GetWorld<T>,
-    D: GetWorldRefMut<R>,
+    S: GetWorld<Data = T>,
+    D: GetWorldRefMut<Data = R>,
 {
     copy_extent_to_position(src, dst, &extent.get_minimum(), extent)
 }

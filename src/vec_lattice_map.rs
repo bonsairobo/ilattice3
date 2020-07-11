@@ -1,6 +1,5 @@
 use crate::{
-    copy_extent, lattice_map::LatticeMapKeyValIterator, prelude::*, Extent, Indexer,
-    StatelessIndexer, Transform, YLevelsIndexer,
+    copy_extent, prelude::*, Extent, Indexer, StatelessIndexer, Transform, YLevelsIndexer,
 };
 
 use serde::{Deserialize, Serialize};
@@ -23,22 +22,25 @@ impl<T, I> GetExtent for VecLatticeMap<T, I> {
     }
 }
 
-impl<T, I: Indexer> GetLocal<T> for VecLatticeMap<T, I>
+impl<T, I: Indexer> GetLocal for VecLatticeMap<T, I>
 where
     T: Clone,
 {
+    type Data = T;
     fn get_local(&self, p: &Point) -> T {
         self.get_linear_ref(self.index_from_local_point(p)).clone()
     }
 }
 
-impl<T, I: Indexer> GetLocalRef<T> for VecLatticeMap<T, I> {
+impl<T, I: Indexer> GetLocalRef for VecLatticeMap<T, I> {
+    type Data = T;
     fn get_local_ref(&self, p: &Point) -> &T {
         self.get_linear_ref(self.index_from_local_point(p))
     }
 }
 
-impl<T, I: Indexer> GetLocalRefMut<T> for VecLatticeMap<T, I> {
+impl<T, I: Indexer> GetLocalRefMut for VecLatticeMap<T, I> {
+    type Data = T;
     fn get_local_ref_mut(&mut self, p: &Point) -> &mut T {
         self.get_linear_ref_mut(self.index_from_local_point(p))
     }
@@ -98,10 +100,6 @@ impl<T, I: Indexer> VecLatticeMap<T, I> {
             self.indexer.clone(),
             self.values.iter().map(f).collect(),
         )
-    }
-
-    pub fn iter(&self) -> LatticeMapKeyValIterator<VecLatticeMap<T, I>, T> {
-        LatticeMapKeyValIterator::new(self, self.extent.into_iter())
     }
 }
 
@@ -193,7 +191,7 @@ impl<T: Clone, I: StatelessIndexer> VecLatticeMap<T, I> {
 
     pub fn copy_from_map<V>(map: &V, extent: &Extent) -> Self
     where
-        V: GetWorld<T>,
+        V: GetWorld<Data = T>,
     {
         let volume = extent.volume();
         let mut values = Vec::with_capacity(volume);
@@ -368,6 +366,17 @@ mod tests {
             let tfm_serial = tfm_map.serialize_extent(&tfm_map.get_extent());
             assert_eq!(tfm_serial, orig_serial);
             prev_map = tfm_map;
+        }
+    }
+
+    #[test]
+    fn test_into_iter() {
+        let extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), [1, 1, 1].into());
+        let map = VecLatticeMap::<_, YLevelsIndexer>::fill(extent, 0);
+
+        for (p, v) in LatticeMapIter(&map) {
+            assert_eq!(p, [0, 0, 0].into());
+            assert_eq!(*v, 0);
         }
     }
 }

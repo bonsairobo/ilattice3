@@ -33,7 +33,8 @@ pub use fn_lattice_map::FnLatticeMap;
 pub use indexer::{Indexer, PeriodicYLevelsIndexer, StatelessIndexer, YLevelsIndexer};
 pub use lattice_map::{
     GetLocal, GetLocalRef, GetLocalRefMut, GetWorld, GetWorldBorrowable, GetWorldRef,
-    GetWorldRefMut, LatticeMapKeyValIterator, MaybeGetWorld, MaybeGetWorldRef, MaybeGetWorldRefMut,
+    GetWorldRefMut, LatticeMapIter, LatticeMapKeyValIterator, MaybeGetWorld, MaybeGetWorldRef,
+    MaybeGetWorldRefMut,
 };
 pub use normal::{
     closest_normal, normal_from_component_index, Direction, DirectionIndex, Normal, PlaneSpanInfo,
@@ -55,7 +56,8 @@ pub mod prelude {
     pub use crate::extent::GetExtent;
     pub use crate::lattice_map::{
         GetLocal, GetLocalRef, GetLocalRefMut, GetWorld, GetWorldBorrowable, GetWorldRef,
-        GetWorldRefMut, MaybeGetWorld, MaybeGetWorldRef, MaybeGetWorldRefMut,
+        GetWorldRefMut, LatticeMapIter, LatticeMapKeyValIterator, MaybeGetWorld, MaybeGetWorldRef,
+        MaybeGetWorldRefMut,
     };
     pub use crate::point::Point;
 }

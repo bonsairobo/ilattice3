@@ -17,7 +17,7 @@ impl<I: Indexer> Into<DotVoxData> for VecLatticeMap<VoxColor, I> {
         };
 
         let mut voxels = Vec::new();
-        for p in &self.get_extent() {
+        for p in self.get_extent() {
             let i = self.get_local(&p);
             if i != EMPTY_VOX_COLOR {
                 assert!(i <= std::u8::MAX as VoxColor);

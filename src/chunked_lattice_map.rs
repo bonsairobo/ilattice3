@@ -111,24 +111,27 @@ impl<T> ChunkedLatticeMap<T> {
     }
 }
 
-impl<T> MaybeGetWorld<T> for ChunkedLatticeMap<T>
+impl<T> MaybeGetWorld for ChunkedLatticeMap<T>
 where
     T: Clone,
 {
+    type Data = T;
     fn maybe_get_world(&self, p: &Point) -> Option<T> {
         self.get_chunk_containing_point(p)
             .map(|chunk| chunk.get_world(p))
     }
 }
 
-impl<T> MaybeGetWorldRef<T> for ChunkedLatticeMap<T> {
+impl<T> MaybeGetWorldRef for ChunkedLatticeMap<T> {
+    type Data = T;
     fn maybe_get_world_ref(&self, p: &Point) -> Option<&T> {
         self.get_chunk_containing_point(p)
             .map(|chunk| chunk.get_world_ref(p))
     }
 }
 
-impl<T> MaybeGetWorldRefMut<T> for ChunkedLatticeMap<T> {
+impl<T> MaybeGetWorldRefMut for ChunkedLatticeMap<T> {
+    type Data = T;
     fn maybe_get_world_ref_mut(&mut self, p: &Point) -> Option<&mut T> {
         self.get_mut_chunk_containing_point(p)
             .map(|chunk| chunk.get_world_ref_mut(p))
@@ -165,7 +168,7 @@ impl<T: Clone> ChunkedLatticeMap<T> {
 impl<T: Clone + Default> ChunkedLatticeMap<T> {
     pub fn copy_map_into_chunks<V>(&mut self, map: &V, fill_default: T)
     where
-        V: GetWorld<T> + GetExtent,
+        V: GetWorld<Data = T> + GetExtent,
     {
         for key in self.key_extent(&map.get_extent()) {
             let chunk_extent = self.extent_for_chunk_key(&key);

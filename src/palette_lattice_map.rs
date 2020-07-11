@@ -26,10 +26,11 @@ where
     }
 }
 
-impl<'a, T, P> GetLocalRef<T> for LatticeVoxels<'a, T, P>
+impl<'a, T, P> GetLocalRef for LatticeVoxels<'a, T, P>
 where
     P: Clone + Into<usize>,
 {
+    type Data = T;
     fn get_local_ref(&self, p: &Point) -> &T {
         self.get_pointed_voxel_info(self.map.get_local(p))
     }
@@ -56,10 +57,11 @@ impl<'a, T, P> GetExtent for ChunkVoxelsRef<'a, T, P> {
     }
 }
 
-impl<'a, T, P> GetLocalRef<T> for ChunkVoxelsRef<'a, T, P>
+impl<'a, T, P> GetLocalRef for ChunkVoxelsRef<'a, T, P>
 where
     P: Clone + Into<usize>,
 {
+    type Data = T;
     fn get_local_ref(&self, p: &Point) -> &T {
         self.get_pointed_voxel_info(self.map.get_local(p))
     }
@@ -86,10 +88,11 @@ impl<'a, T, P> GetExtent for ChunkVoxelsRefMut<'a, T, P> {
     }
 }
 
-impl<'a, T, P> GetLocalRefMut<T> for ChunkVoxelsRefMut<'a, T, P>
+impl<'a, T, P> GetLocalRefMut for ChunkVoxelsRefMut<'a, T, P>
 where
     P: Clone + Into<usize>,
 {
+    type Data = T;
     fn get_local_ref_mut(&mut self, p: &Point) -> &mut T {
         self.get_pointed_voxel_info_mut(self.map.get_local(p))
     }
@@ -159,10 +162,11 @@ where
     }
 }
 
-impl<T, P> MaybeGetWorldRef<T> for ChunkedPaletteLatticeMap<T, P>
+impl<T, P> MaybeGetWorldRef for ChunkedPaletteLatticeMap<T, P>
 where
     P: Clone + Into<usize>,
 {
+    type Data = T;
     fn maybe_get_world_ref(&self, p: &Point) -> Option<&T> {
         self.map
             .maybe_get_world(p)
@@ -170,10 +174,11 @@ where
     }
 }
 
-impl<T, P> MaybeGetWorldRefMut<T> for ChunkedPaletteLatticeMap<T, P>
+impl<T, P> MaybeGetWorldRefMut for ChunkedPaletteLatticeMap<T, P>
 where
     P: Clone + Into<usize>,
 {
+    type Data = T;
     fn maybe_get_world_ref_mut(&mut self, p: &Point) -> Option<&mut T> {
         self.map
             .maybe_get_world(p)

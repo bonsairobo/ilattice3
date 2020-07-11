@@ -10,10 +10,11 @@ impl<F> FnLatticeMap<F> {
     }
 }
 
-impl<T, F> GetWorld<T> for FnLatticeMap<F>
+impl<T, F> GetWorld for FnLatticeMap<F>
 where
     F: Fn(&Point) -> T,
 {
+    type Data = T;
     fn get_world(&self, p: &Point) -> T {
         (self.f)(p)
     }
