@@ -111,6 +111,16 @@ impl<T> ChunkedLatticeMap<T> {
     }
 }
 
+impl<T> MaybeGetWorld<T> for ChunkedLatticeMap<T>
+where
+    T: Clone,
+{
+    fn maybe_get_world(&self, p: &Point) -> Option<T> {
+        self.get_chunk_containing_point(p)
+            .map(|chunk| chunk.get_world(p))
+    }
+}
+
 impl<T> MaybeGetWorldRef<T> for ChunkedLatticeMap<T> {
     fn maybe_get_world_ref(&self, p: &Point) -> Option<&T> {
         self.get_chunk_containing_point(p)
