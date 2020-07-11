@@ -4,7 +4,7 @@ use crate::{
 
 use serde::{Deserialize, Serialize};
 
-/// A map from points in an extent to some kind of data `T`.
+/// A map from points in an extent to some kind of data `T`, stored as a `Vec<T>`.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct VecLatticeMap<T, I = YLevelsIndexer> {
     // Works if I: Default, which is true for I: StatelessIndexer.
@@ -47,6 +47,8 @@ impl<T, I: Indexer> GetLocalRefMut for VecLatticeMap<T, I> {
 }
 
 impl<T, I: Indexer> VecLatticeMap<T, I> {
+    /// Creates a new `VecLatticeMap` with the given `values`, which are assumed to be ordered
+    /// according to `indexer`.
     pub fn new_with_indexer(extent: Extent, indexer: I, values: Vec<T>) -> Self {
         VecLatticeMap {
             extent,
@@ -55,42 +57,51 @@ impl<T, I: Indexer> VecLatticeMap<T, I> {
         }
     }
 
+    /// Get the `Indexer` for `self`.
     pub fn get_indexer(&self) -> &I {
         &self.indexer
     }
 
+    /// Borrow the value at a linear `index`.
     pub fn get_linear_ref(&self, index: usize) -> &T {
         &self.values[index]
     }
 
+    /// Mutably borrow the value at a linear `index`.
     pub fn get_linear_ref_mut(&mut self, index: usize) -> &mut T {
         &mut self.values[index]
     }
 
+    /// Get a linear index from the point `p` in local coordinates using the indexer of `self`.
     pub fn index_from_local_point(&self, p: &Point) -> usize {
         let local_sup = self.extent.get_local_supremum();
 
         I::index_from_local_point(&local_sup, p)
     }
 
+    /// Get a point `p` from a linear `index` using the indexer of `self`.
     pub fn local_point_from_index(&self, index: usize) -> Point {
         let local_sup = self.extent.get_local_supremum();
 
         I::local_point_from_index(&local_sup, index)
     }
 
+    /// Get a linear index from the point `p` in world coordinates using the indexer of `self`.
     pub fn index_from_world_point(&self, p: &Point) -> usize {
         self.index_from_local_point(&self.extent.local_point_from_world_point(p))
     }
 
+    /// Translate the entire extent by `delta`.
     pub fn translate(&mut self, delta: &Point) {
         self.extent = self.extent + *delta;
     }
 
+    /// Move the minimum of the extent to `new_min`.
     pub fn set_minimum(&mut self, new_min: &Point) {
         self.extent = self.extent.with_minimum(*new_min);
     }
 
+    /// Create a new lattice map by applying `f` pointwise.
     pub fn map<F, S>(&self, f: F) -> VecLatticeMap<S, I>
     where
         F: Fn(&T) -> S,
@@ -104,6 +115,8 @@ impl<T, I: Indexer> VecLatticeMap<T, I> {
 }
 
 impl<T, I: StatelessIndexer> VecLatticeMap<T, I> {
+    /// Creates a new `VecLatticeMap` with the given `values`, which are assumed to be ordered
+    /// according to a newly created `indexer: I`.
     pub fn new(extent: Extent, values: Vec<T>) -> Self {
         VecLatticeMap {
             extent,
@@ -112,6 +125,7 @@ impl<T, I: StatelessIndexer> VecLatticeMap<T, I> {
         }
     }
 
+    /// Same as `Self::new`, but with minimum at the origin, and dimensions (or supremum) `sup`.
     pub fn new_at_origin(sup: Point, values: Vec<T>) -> Self {
         let extent = Extent::from_min_and_world_supremum([0, 0, 0].into(), sup);
 
@@ -144,6 +158,7 @@ impl<T: Clone, I: Indexer> VecLatticeMap<T, I> {
         tfm_map
     }
 
+    /// Set the value at every point in `extent` to `init_val`, using the specific `indexer`.
     pub fn fill_with_indexer(indexer: I, extent: Extent, init_val: T) -> Self {
         VecLatticeMap {
             extent,
@@ -171,6 +186,7 @@ impl<T: Clone, I: Indexer> VecLatticeMap<T, I> {
         data
     }
 
+    /// Copy all values in `extent` to a new `VecLatticeMap` of the same extent.
     pub fn copy_extent_into_new_map(&self, extent: &Extent) -> Self {
         let volume = extent.volume();
         let mut values = Vec::with_capacity(volume);
@@ -185,10 +201,13 @@ impl<T: Clone, I: Indexer> VecLatticeMap<T, I> {
 }
 
 impl<T: Clone, I: StatelessIndexer> VecLatticeMap<T, I> {
+    /// Set the value at every point in `extent` to `init_val`.
     pub fn fill(extent: Extent, init_val: T) -> Self {
         Self::fill_with_indexer(I::default(), extent, init_val)
     }
 
+    /// Creates a new `VecLatticeMap` by copying the values from another `map` at all points in
+    /// `extent`.
     pub fn copy_from_map<V>(map: &V, extent: &Extent) -> Self
     where
         V: GetWorld<Data = T>,
