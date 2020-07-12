@@ -1,8 +1,7 @@
-use crate::{
-    copy_extent, prelude::*, Extent, Indexer, StatelessIndexer, Transform, YLevelsIndexer,
-};
+use crate::{copy_extent, prelude::*, Extent, Indexer, Transform, YLevelsIndexer};
 
 use serde::{Deserialize, Serialize};
+use std::marker::PhantomData;
 
 /// A map from points in an extent to some kind of data `T`, stored as a `Vec<T>`.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -10,7 +9,7 @@ pub struct VecLatticeMap<T, I = YLevelsIndexer> {
     // Works if I: Default, which is true for I: StatelessIndexer.
     #[serde(skip_deserializing)]
     #[serde(skip_serializing)]
-    indexer: I,
+    indexer: PhantomData<I>,
 
     extent: Extent,
     values: Vec<T>,
@@ -74,21 +73,6 @@ impl<T, I: Indexer> GetLocalRefMut for VecLatticeMap<T, I> {
 }
 
 impl<T, I: Indexer> VecLatticeMap<T, I> {
-    /// Creates a new `VecLatticeMap` with the given `values`, which are assumed to be ordered
-    /// according to `indexer`.
-    pub fn new_with_indexer(extent: Extent, indexer: I, values: Vec<T>) -> Self {
-        VecLatticeMap {
-            extent,
-            indexer,
-            values,
-        }
-    }
-
-    /// Get the `Indexer` for `self`.
-    pub fn get_indexer(&self) -> &I {
-        &self.indexer
-    }
-
     /// Get a linear index from the point `p` in local coordinates using the indexer of `self`.
     pub fn index_from_local_point(&self, p: &Point) -> usize {
         let local_sup = self.extent.get_local_supremum();
@@ -123,22 +107,18 @@ impl<T, I: Indexer> VecLatticeMap<T, I> {
     where
         F: Fn(&T) -> S,
     {
-        VecLatticeMap::new_with_indexer(
-            *self.get_extent(),
-            self.indexer.clone(),
-            self.values.iter().map(f).collect(),
-        )
+        VecLatticeMap::new(*self.get_extent(), self.values.iter().map(f).collect())
     }
 }
 
-impl<T, I: StatelessIndexer> VecLatticeMap<T, I> {
+impl<T, I: Indexer> VecLatticeMap<T, I> {
     /// Creates a new `VecLatticeMap` with the given `values`, which are assumed to be ordered
     /// according to a newly created `indexer: I`.
     pub fn new(extent: Extent, values: Vec<T>) -> Self {
         VecLatticeMap {
             extent,
-            indexer: I::default(),
             values,
+            indexer: Default::default(),
         }
     }
 
@@ -164,7 +144,7 @@ impl<T: Clone, I: Indexer> VecLatticeMap<T, I> {
         unsafe {
             new_values.set_len(volume);
         }
-        let mut tfm_map = Self::new_with_indexer(tfm_extent, self.indexer.clone(), new_values);
+        let mut tfm_map = Self::new(tfm_extent, new_values);
 
         // PERF: this is not the most efficient, but it is very simple.
         for p in extent {
@@ -173,15 +153,6 @@ impl<T: Clone, I: Indexer> VecLatticeMap<T, I> {
         }
 
         tfm_map
-    }
-
-    /// Set the value at every point in `extent` to `init_val`, using the specific `indexer`.
-    pub fn fill_with_indexer(indexer: I, extent: Extent, init_val: T) -> Self {
-        VecLatticeMap {
-            extent,
-            indexer,
-            values: vec![init_val; extent.volume()],
-        }
     }
 
     /// Returns a vec of the data in `extent`, ordered linearly by `I: Indexer`. A map
@@ -210,17 +181,19 @@ impl<T: Clone, I: Indexer> VecLatticeMap<T, I> {
         unsafe {
             values.set_len(volume);
         }
-        let mut copy = VecLatticeMap::new_with_indexer(*extent, self.indexer.clone(), values);
+        let mut copy = VecLatticeMap::new(*extent, values);
         copy_extent(self, &mut copy, extent);
 
         copy
     }
-}
 
-impl<T: Clone, I: StatelessIndexer> VecLatticeMap<T, I> {
     /// Set the value at every point in `extent` to `init_val`.
     pub fn fill(extent: Extent, init_val: T) -> Self {
-        Self::fill_with_indexer(I::default(), extent, init_val)
+        VecLatticeMap {
+            extent,
+            values: vec![init_val; extent.volume()],
+            indexer: Default::default(),
+        }
     }
 
     /// Creates a new `VecLatticeMap` by copying the values from another `map` at all points in
