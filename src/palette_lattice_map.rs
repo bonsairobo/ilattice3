@@ -26,6 +26,17 @@ where
     }
 }
 
+impl<'a, T, P> GetLinearRef for LatticeVoxels<'a, T, P>
+where
+    P: Clone + Into<usize>,
+{
+    type Data = T;
+
+    fn get_linear_ref(&self, i: usize) -> &T {
+        self.get_pointed_voxel_info(self.map.get_linear(i))
+    }
+}
+
 impl<'a, T, P> GetLocalRef for LatticeVoxels<'a, T, P>
 where
     P: Clone + Into<usize>,
