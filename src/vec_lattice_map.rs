@@ -22,6 +22,30 @@ impl<T, I> GetExtent for VecLatticeMap<T, I> {
     }
 }
 
+impl<T, I: Indexer> GetLinear for VecLatticeMap<T, I>
+where
+    T: Clone,
+{
+    type Data = T;
+    fn get_linear(&self, i: usize) -> T {
+        self.get_linear_ref(i).clone()
+    }
+}
+
+impl<T, I: Indexer> GetLinearRef for VecLatticeMap<T, I> {
+    type Data = T;
+    fn get_linear_ref(&self, i: usize) -> &T {
+        &self.values[i]
+    }
+}
+
+impl<T, I: Indexer> GetLinearRefMut for VecLatticeMap<T, I> {
+    type Data = T;
+    fn get_linear_ref_mut(&mut self, i: usize) -> &mut T {
+        &mut self.values[i]
+    }
+}
+
 impl<T, I: Indexer> GetLocal for VecLatticeMap<T, I>
 where
     T: Clone,
@@ -60,16 +84,6 @@ impl<T, I: Indexer> VecLatticeMap<T, I> {
     /// Get the `Indexer` for `self`.
     pub fn get_indexer(&self) -> &I {
         &self.indexer
-    }
-
-    /// Borrow the value at a linear `index`.
-    pub fn get_linear_ref(&self, index: usize) -> &T {
-        &self.values[index]
-    }
-
-    /// Mutably borrow the value at a linear `index`.
-    pub fn get_linear_ref_mut(&mut self, index: usize) -> &mut T {
-        &mut self.values[index]
     }
 
     /// Get a linear index from the point `p` in local coordinates using the indexer of `self`.

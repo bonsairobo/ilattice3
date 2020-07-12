@@ -4,6 +4,24 @@ use crate::{extent::ExtentIterator, GetExtent, Point};
 
 use std::borrow::Borrow;
 
+/// Returns the data at index `i`.
+pub trait GetLinear {
+    type Data;
+    fn get_linear(&self, i: usize) -> Self::Data;
+}
+
+/// Returns a reference to the data at index `i`.
+pub trait GetLinearRef {
+    type Data;
+    fn get_linear_ref(&self, i: usize) -> &Self::Data;
+}
+
+/// Returns a mutable reference to the data at index `i`.
+pub trait GetLinearRefMut {
+    type Data;
+    fn get_linear_ref_mut(&mut self, i: usize) -> &mut Self::Data;
+}
+
 /// Returns the data at point `p` in lattice-local coordinates, i.e. relative to some
 /// fixed origin.
 pub trait GetLocal {
