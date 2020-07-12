@@ -1,14 +1,17 @@
-use crate::{prelude::*, ChunkedLatticeMap, Extent, Point, VecLatticeMap};
+use crate::{
+    prelude::*, ChunkedLatticeMap, Extent, HasIndexer, Indexer, Point, VecLatticeMap,
+    YLevelsIndexer,
+};
 use serde::{Deserialize, Serialize};
 
 /// An owned `VecLatticeMap` with a borrowed palette. The `VecLatticeMap` does not need to be a
 /// chunk.
-pub struct LatticeVoxels<'a, T, P> {
+pub struct LatticeVoxels<'a, T, P, I> {
     infos: &'a Vec<T>,
-    pub map: VecLatticeMap<P>,
+    pub map: VecLatticeMap<P, I>,
 }
 
-impl<'a, T, P> LatticeVoxels<'a, T, P>
+impl<'a, T, P, I> LatticeVoxels<'a, T, P, I>
 where
     P: Into<usize>,
 {
@@ -17,7 +20,7 @@ where
     }
 }
 
-impl<'a, T, P> GetExtent for LatticeVoxels<'a, T, P>
+impl<'a, T, P, I> GetExtent for LatticeVoxels<'a, T, P, I>
 where
     P: Into<usize>,
 {
@@ -26,9 +29,17 @@ where
     }
 }
 
-impl<'a, T, P> GetLinearRef for LatticeVoxels<'a, T, P>
+impl<'a, T, P, I> HasIndexer for LatticeVoxels<'a, T, P, I>
+where
+    I: Indexer,
+{
+    type Indexer = I;
+}
+
+impl<'a, T, P, I> GetLinearRef for LatticeVoxels<'a, T, P, I>
 where
     P: Clone + Into<usize>,
+    I: Indexer,
 {
     type Data = T;
 
@@ -37,24 +48,13 @@ where
     }
 }
 
-impl<'a, T, P> GetLocalRef for LatticeVoxels<'a, T, P>
-where
-    P: Clone + Into<usize>,
-{
-    type Data = T;
-
-    fn get_local_ref(&self, p: &Point) -> &T {
-        self.get_pointed_voxel_info(self.map.get_local(p))
-    }
-}
-
 /// A borrowed chunk and palette.
-pub struct ChunkVoxelsRef<'a, T, P> {
+pub struct ChunkVoxelsRef<'a, T, P, I> {
     infos: &'a Vec<T>,
-    pub map: &'a VecLatticeMap<P>,
+    pub map: &'a VecLatticeMap<P, I>,
 }
 
-impl<'a, T, P> ChunkVoxelsRef<'a, T, P>
+impl<'a, T, P, I> ChunkVoxelsRef<'a, T, P, I>
 where
     P: Into<usize>,
 {
@@ -63,15 +63,16 @@ where
     }
 }
 
-impl<'a, T, P> GetExtent for ChunkVoxelsRef<'a, T, P> {
+impl<'a, T, P, I> GetExtent for ChunkVoxelsRef<'a, T, P, I> {
     fn get_extent(&self) -> &Extent {
         self.map.get_extent()
     }
 }
 
-impl<'a, T, P> GetLocalRef for ChunkVoxelsRef<'a, T, P>
+impl<'a, T, P, I> GetLocalRef for ChunkVoxelsRef<'a, T, P, I>
 where
     P: Clone + Into<usize>,
+    I: Indexer,
 {
     type Data = T;
 
@@ -81,12 +82,12 @@ where
 }
 
 /// A mutably borrowed chunk and palette.
-pub struct ChunkVoxelsRefMut<'a, T, P> {
+pub struct ChunkVoxelsRefMut<'a, T, P, I> {
     infos: &'a mut Vec<T>,
-    map: &'a mut VecLatticeMap<P>,
+    map: &'a mut VecLatticeMap<P, I>,
 }
 
-impl<'a, T, P> ChunkVoxelsRefMut<'a, T, P>
+impl<'a, T, P, I> ChunkVoxelsRefMut<'a, T, P, I>
 where
     P: Into<usize>,
 {
@@ -95,15 +96,16 @@ where
     }
 }
 
-impl<'a, T, P> GetExtent for ChunkVoxelsRefMut<'a, T, P> {
+impl<'a, T, P, I> GetExtent for ChunkVoxelsRefMut<'a, T, P, I> {
     fn get_extent(&self) -> &Extent {
         self.map.get_extent()
     }
 }
 
-impl<'a, T, P> GetLocalRefMut for ChunkVoxelsRefMut<'a, T, P>
+impl<'a, T, P, I> GetLocalRefMut for ChunkVoxelsRefMut<'a, T, P, I>
 where
     P: Clone + Into<usize>,
+    I: Indexer,
 {
     type Data = T;
 
@@ -114,15 +116,15 @@ where
 
 /// A `ChunkedLatticeMap` that stores voxel data efficiently using palette compression.
 #[derive(Deserialize, Serialize)]
-pub struct ChunkedPaletteLatticeMap<T, P> {
+pub struct ChunkedPaletteLatticeMap<T, P, I = YLevelsIndexer> {
     /// The palette of voxels that can be used in the map.
     pub infos: Vec<T>,
     /// Which voxels are used at specific points of the lattice.
-    pub map: ChunkedLatticeMap<P>,
+    pub map: ChunkedLatticeMap<P, I>,
 }
 
-impl<T, P> ChunkedPaletteLatticeMap<T, P> {
-    pub fn get_chunk(&self, chunk_key: &Point) -> Option<ChunkVoxelsRef<T, P>> {
+impl<T, P, I> ChunkedPaletteLatticeMap<T, P, I> {
+    pub fn get_chunk(&self, chunk_key: &Point) -> Option<ChunkVoxelsRef<T, P, I>> {
         let ChunkedPaletteLatticeMap { map, infos } = self;
 
         map.get_chunk(chunk_key).map(|chunk_map| ChunkVoxelsRef {
@@ -131,7 +133,7 @@ impl<T, P> ChunkedPaletteLatticeMap<T, P> {
         })
     }
 
-    pub fn get_chunk_mut(&mut self, chunk_key: &Point) -> Option<ChunkVoxelsRefMut<T, P>> {
+    pub fn get_chunk_mut(&mut self, chunk_key: &Point) -> Option<ChunkVoxelsRefMut<T, P, I>> {
         let ChunkedPaletteLatticeMap { map, infos } = self;
 
         map.get_mut_chunk(chunk_key)
@@ -141,7 +143,7 @@ impl<T, P> ChunkedPaletteLatticeMap<T, P> {
             })
     }
 
-    pub fn iter_chunks_ref(&self) -> impl Iterator<Item = (&Point, ChunkVoxelsRef<T, P>)> {
+    pub fn iter_chunks_ref(&self) -> impl Iterator<Item = (&Point, ChunkVoxelsRef<T, P, I>)> {
         self.map.iter_chunks().map(move |(chunk_key, chunk_map)| {
             (
                 chunk_key,
@@ -154,11 +156,12 @@ impl<T, P> ChunkedPaletteLatticeMap<T, P> {
     }
 }
 
-impl<T, P> ChunkedPaletteLatticeMap<T, P>
+impl<T, P, I> ChunkedPaletteLatticeMap<T, P, I>
 where
     P: Clone + Default,
+    I: Indexer,
 {
-    pub fn get_chunk_and_boundary(&self, chunk_key: &Point) -> LatticeVoxels<T, P> {
+    pub fn get_chunk_and_boundary(&self, chunk_key: &Point) -> LatticeVoxels<T, P, I> {
         let ChunkedPaletteLatticeMap { map, infos } = self;
 
         let chunk_and_boundary = map.get_chunk_and_boundary(chunk_key);
@@ -169,7 +172,9 @@ where
         }
     }
 
-    pub fn iter_chunks_with_boundary(&self) -> impl Iterator<Item = (&Point, LatticeVoxels<T, P>)> {
+    pub fn iter_chunks_with_boundary(
+        &self,
+    ) -> impl Iterator<Item = (&Point, LatticeVoxels<T, P, I>)> {
         self.map
             .chunk_keys()
             .map(move |chunk_key| (chunk_key, self.get_chunk_and_boundary(chunk_key)))

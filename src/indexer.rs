@@ -1,6 +1,6 @@
 use crate::Point;
 
-pub trait PeriodicIndexer: Indexer {}
+use serde::{Deserialize, Serialize};
 
 /// Describes how to convert from a 3D point to a linear array index (and back).
 pub trait Indexer {
@@ -11,8 +11,14 @@ pub trait Indexer {
     fn local_point_from_index(s: &Point, index: usize) -> Point;
 }
 
+pub trait PeriodicIndexer: Indexer {}
+
+pub trait HasIndexer {
+    type Indexer: Indexer;
+}
+
 /// A standard `Indexer` that allows for layouts where XZ level sets are specified in order of Y.
-#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct YLevelsIndexer;
 
 impl Indexer for YLevelsIndexer {

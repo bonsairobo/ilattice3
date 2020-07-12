@@ -1,6 +1,6 @@
 //! A bunch of common traits for the various kinds of lattice maps.
 
-use crate::{extent::ExtentIterator, GetExtent, Point};
+use crate::{extent::ExtentIterator, GetExtent, HasIndexer, Indexer, Point};
 
 use std::borrow::Borrow;
 
@@ -93,6 +93,48 @@ pub trait MaybeGetWorldRefMut {
 //  | '_ \| |/ _` | '_ \| |/ / _ \ __/ __|
 //  | |_) | | (_| | | | |   <  __/ |_\__ \
 //  |_.__/|_|\__,_|_| |_|_|\_\___|\__|___/
+
+impl<M, T, I> GetLocal for M
+where
+    M: GetExtent + GetLinear<Data = T> + HasIndexer<Indexer = I>,
+    I: Indexer,
+{
+    type Data = T;
+
+    fn get_local(&self, p: &Point) -> Self::Data {
+        let s = self.get_extent().get_local_supremum();
+
+        self.get_linear(I::index_from_local_point(s, p))
+    }
+}
+
+impl<M, T, I> GetLocalRef for M
+where
+    M: GetExtent + GetLinearRef<Data = T> + HasIndexer<Indexer = I>,
+    I: Indexer,
+{
+    type Data = T;
+
+    fn get_local_ref(&self, p: &Point) -> &Self::Data {
+        let s = *self.get_extent().get_local_supremum();
+
+        self.get_linear_ref(I::index_from_local_point(&s, p))
+    }
+}
+
+impl<M, T, I> GetLocalRefMut for M
+where
+    M: GetExtent + GetLinearRefMut<Data = T> + HasIndexer<Indexer = I>,
+    I: Indexer,
+{
+    type Data = T;
+
+    fn get_local_ref_mut(&mut self, p: &Point) -> &mut Self::Data {
+        let s = *self.get_extent().get_local_supremum();
+
+        self.get_linear_ref_mut(I::index_from_local_point(&s, p))
+    }
+}
 
 impl<M, T> GetWorld for M
 where

@@ -8,12 +8,12 @@ use std::collections::{hash_map, HashMap};
 
 /// Stores a partial function on ZxZxZ in same-sized chunks using a hash map.
 #[derive(Deserialize, Serialize)]
-pub struct ChunkedLatticeMap<T> {
+pub struct ChunkedLatticeMap<T, I = YLevelsIndexer> {
     chunk_size: Point,
-    map: HashMap<Point, VecLatticeMap<T>>,
+    map: HashMap<Point, VecLatticeMap<T, I>>,
 }
 
-impl<T> ChunkedLatticeMap<T> {
+impl<T, I> ChunkedLatticeMap<T, I> {
     pub fn new(chunk_size: Point) -> Self {
         assert!(chunk_size > [0, 0, 0].into());
 
@@ -41,30 +41,30 @@ impl<T> ChunkedLatticeMap<T> {
         Extent::from_min_and_local_supremum(min, local_sup)
     }
 
-    pub fn iter_chunks(&self) -> impl Iterator<Item = (&Point, &VecLatticeMap<T>)> {
+    pub fn iter_chunks(&self) -> impl Iterator<Item = (&Point, &VecLatticeMap<T, I>)> {
         self.map.iter()
     }
 
-    pub fn iter_chunks_mut(&mut self) -> impl Iterator<Item = (&Point, &mut VecLatticeMap<T>)> {
+    pub fn iter_chunks_mut(&mut self) -> impl Iterator<Item = (&Point, &mut VecLatticeMap<T, I>)> {
         self.map.iter_mut()
     }
 
-    pub fn get_chunk(&self, key: &Point) -> Option<&VecLatticeMap<T>> {
+    pub fn get_chunk(&self, key: &Point) -> Option<&VecLatticeMap<T, I>> {
         self.map.get(key)
     }
 
-    pub fn get_mut_chunk(&mut self, key: &Point) -> Option<&mut VecLatticeMap<T>> {
+    pub fn get_mut_chunk(&mut self, key: &Point) -> Option<&mut VecLatticeMap<T, I>> {
         self.map.get_mut(key)
     }
 
-    pub fn get_chunk_containing_point(&self, point: &Point) -> Option<&VecLatticeMap<T>> {
+    pub fn get_chunk_containing_point(&self, point: &Point) -> Option<&VecLatticeMap<T, I>> {
         self.get_chunk(&self.chunk_key(point))
     }
 
     pub fn get_mut_chunk_containing_point(
         &mut self,
         point: &Point,
-    ) -> Option<&mut VecLatticeMap<T>> {
+    ) -> Option<&mut VecLatticeMap<T, I>> {
         self.get_mut_chunk(&self.chunk_key(point))
     }
 
@@ -73,16 +73,12 @@ impl<T> ChunkedLatticeMap<T> {
     pub fn iter_point_values(
         &self,
         extent: Extent,
-    ) -> ChunkedLatticeMapIterator<
-        T,
-        std::vec::IntoIter<&VecLatticeMap<T, YLevelsIndexer>>,
-        YLevelsIndexer,
-    > {
+    ) -> ChunkedLatticeMapIterator<T, std::vec::IntoIter<&VecLatticeMap<T, I>>, I> {
         let chunks = self
             .key_extent(&extent)
             .into_iter()
             .filter_map(|k| self.map.get(&k))
-            .collect::<Vec<&VecLatticeMap<T>>>()
+            .collect::<Vec<&VecLatticeMap<T, I>>>()
             .into_iter();
 
         ChunkedLatticeMapIterator {
@@ -93,7 +89,7 @@ impl<T> ChunkedLatticeMap<T> {
     }
 
     /// An iterator over the chunk keys (sparse points in the space of chunk coordinates).
-    pub fn chunk_keys(&self) -> ChunkKeyIterator<T> {
+    pub fn chunk_keys(&self) -> ChunkKeyIterator<T, I> {
         ChunkKeyIterator {
             map_key_iter: self.map.keys(),
         }
@@ -142,11 +138,11 @@ impl<T> MaybeGetWorldRefMut for ChunkedLatticeMap<T> {
 }
 
 /// An iterator over the chunk keys (sparse points in the space of chunk coordinates).
-pub struct ChunkKeyIterator<'a, T> {
-    map_key_iter: hash_map::Keys<'a, Point, VecLatticeMap<T>>,
+pub struct ChunkKeyIterator<'a, T, I> {
+    map_key_iter: hash_map::Keys<'a, Point, VecLatticeMap<T, I>>,
 }
 
-impl<'a, T> Iterator for ChunkKeyIterator<'a, T> {
+impl<'a, T, I> Iterator for ChunkKeyIterator<'a, T, I> {
     type Item = &'a Point;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -154,7 +150,10 @@ impl<'a, T> Iterator for ChunkKeyIterator<'a, T> {
     }
 }
 
-impl<T: Clone> ChunkedLatticeMap<T> {
+impl<T: Clone, I> ChunkedLatticeMap<T, I>
+where
+    I: Indexer,
+{
     /// Get mutable data for point `p`. If `p` does not exist, the chunk will be filled with the
     /// given `default` value.
     pub fn get_mut_or_create(&mut self, p: &Point, default: T) -> &mut T {
@@ -168,7 +167,10 @@ impl<T: Clone> ChunkedLatticeMap<T> {
     }
 }
 
-impl<T: Clone + Default> ChunkedLatticeMap<T> {
+impl<T: Clone + Default, I> ChunkedLatticeMap<T, I>
+where
+    I: Indexer,
+{
     pub fn copy_map_into_chunks<V>(&mut self, map: &V, fill_default: T)
     where
         V: GetWorld<Data = T> + GetExtent,
@@ -190,7 +192,7 @@ impl<T: Clone + Default> ChunkedLatticeMap<T> {
         self.copy_map_into_chunks(&fill_lat, fill_default);
     }
 
-    pub fn copy_extent_into_new_map(&self, extent: Extent) -> VecLatticeMap<T> {
+    pub fn copy_extent_into_new_map(&self, extent: Extent) -> VecLatticeMap<T, I> {
         let mut new_map = VecLatticeMap::fill(extent, T::default());
         for (p, val) in self.iter_point_values(extent) {
             *new_map.get_world_ref_mut(&p) = val.clone();
@@ -199,11 +201,11 @@ impl<T: Clone + Default> ChunkedLatticeMap<T> {
         new_map
     }
 
-    pub fn copy_into_new_map(&self) -> VecLatticeMap<T> {
+    pub fn copy_into_new_map(&self) -> VecLatticeMap<T, I> {
         self.copy_extent_into_new_map(self.bounding_extent())
     }
 
-    pub fn get_chunk_and_boundary(&self, chunk_key: &Point) -> VecLatticeMap<T> {
+    pub fn get_chunk_and_boundary(&self, chunk_key: &Point) -> VecLatticeMap<T, I> {
         let extent = self.extent_for_chunk_key(chunk_key).padded(1);
 
         self.copy_extent_into_new_map(extent)

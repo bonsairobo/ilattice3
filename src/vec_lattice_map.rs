@@ -1,4 +1,4 @@
-use crate::{copy_extent, prelude::*, Extent, Indexer, Transform, YLevelsIndexer};
+use crate::{copy_extent, prelude::*, Extent, HasIndexer, Indexer, Transform, YLevelsIndexer};
 
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
@@ -21,18 +21,27 @@ impl<T, I> GetExtent for VecLatticeMap<T, I> {
     }
 }
 
+impl<T, I> HasIndexer for VecLatticeMap<T, I>
+where
+    I: Indexer,
+{
+    type Indexer = I;
+}
+
 impl<T, I: Indexer> GetLinear for VecLatticeMap<T, I>
 where
     T: Clone,
 {
     type Data = T;
+
     fn get_linear(&self, i: usize) -> T {
-        self.get_linear_ref(i).clone()
+        self.values[i].clone()
     }
 }
 
 impl<T, I: Indexer> GetLinearRef for VecLatticeMap<T, I> {
     type Data = T;
+
     fn get_linear_ref(&self, i: usize) -> &T {
         &self.values[i]
     }
@@ -40,35 +49,9 @@ impl<T, I: Indexer> GetLinearRef for VecLatticeMap<T, I> {
 
 impl<T, I: Indexer> GetLinearRefMut for VecLatticeMap<T, I> {
     type Data = T;
+
     fn get_linear_ref_mut(&mut self, i: usize) -> &mut T {
         &mut self.values[i]
-    }
-}
-
-impl<T, I: Indexer> GetLocal for VecLatticeMap<T, I>
-where
-    T: Clone,
-{
-    type Data = T;
-
-    fn get_local(&self, p: &Point) -> T {
-        self.get_linear_ref(self.index_from_local_point(p)).clone()
-    }
-}
-
-impl<T, I: Indexer> GetLocalRef for VecLatticeMap<T, I> {
-    type Data = T;
-
-    fn get_local_ref(&self, p: &Point) -> &T {
-        self.get_linear_ref(self.index_from_local_point(p))
-    }
-}
-
-impl<T, I: Indexer> GetLocalRefMut for VecLatticeMap<T, I> {
-    type Data = T;
-
-    fn get_local_ref_mut(&mut self, p: &Point) -> &mut T {
-        self.get_linear_ref_mut(self.index_from_local_point(p))
     }
 }
 
@@ -109,9 +92,7 @@ impl<T, I: Indexer> VecLatticeMap<T, I> {
     {
         VecLatticeMap::new(*self.get_extent(), self.values.iter().map(f).collect())
     }
-}
 
-impl<T, I: Indexer> VecLatticeMap<T, I> {
     /// Creates a new `VecLatticeMap` with the given `values`, which are assumed to be ordered
     /// according to a newly created `indexer: I`.
     pub fn new(extent: Extent, values: Vec<T>) -> Self {

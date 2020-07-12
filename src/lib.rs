@@ -30,7 +30,7 @@ pub use extent::{
     ExtentIterator, GetExtent,
 };
 pub use fn_lattice_map::FnLatticeMap;
-pub use indexer::{Indexer, PeriodicYLevelsIndexer, YLevelsIndexer};
+pub use indexer::{HasIndexer, Indexer, PeriodicYLevelsIndexer, YLevelsIndexer};
 pub use lattice_map::{
     GetLinear, GetLinearRef, GetLinearRefMut, GetLocal, GetLocalRef, GetLocalRefMut, GetWorld,
     GetWorldBorrowable, GetWorldRef, GetWorldRefMut, LatticeMapIter, LatticeMapKeyValIterator,
