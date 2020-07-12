@@ -215,11 +215,21 @@ impl Extent {
         self.intersection(other) == *self
     }
 
-    pub fn point_is_on_boundary(&self, p: &Point) -> bool {
+    /// Returns a bool for each `Direction` where the point could be on a boundary.
+    pub fn point_is_on_boundary(&self, p: &Point) -> DirectionIndex<bool> {
         let min = self.minimum;
         let max = self.get_world_max();
 
-        p.x == min.x || p.x == max.x || p.y == min.y || p.y == max.y || p.z == min.z || p.z == max.z
+        DirectionIndex {
+            values: [
+                p.x == min.x,
+                p.x == max.x,
+                p.y == min.y,
+                p.y == max.y,
+                p.z == min.z,
+                p.z == max.z,
+            ],
+        }
     }
 
     /// Get the corner points, i.e. those boundary points which are extreme in each dimension.
