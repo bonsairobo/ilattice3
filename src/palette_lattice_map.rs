@@ -36,6 +36,8 @@ where
     type Indexer = I;
 }
 
+// TODO: impl GetLinear* for LatticeVoxels
+
 impl<'a, T, P, I> GetLinearRef for LatticeVoxels<'a, T, P, I>
 where
     P: Clone + Into<usize>,
@@ -68,6 +70,8 @@ impl<'a, T, P, I> GetExtent for ChunkVoxelsRef<'a, T, P, I> {
         self.map.get_extent()
     }
 }
+
+// TODO: impl HasIndexer and GetLinear* for ChunkVoxels*
 
 impl<'a, T, P, I> GetLocalRef for ChunkVoxelsRef<'a, T, P, I>
 where

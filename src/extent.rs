@@ -83,7 +83,7 @@ impl Extent {
 
     /// Returns a cube with all dimensions of length `2 * radius + 1`.
     pub fn from_center_and_radius(center: Point, radius: i32) -> Self {
-        assert!(radius > 0);
+        assert!(radius >= 0);
 
         let minimum = center - [radius; 3].into();
         let local_sup: Point = [2 * radius + 1; 3].into();

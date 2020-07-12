@@ -6,7 +6,7 @@ use std::marker::PhantomData;
 /// A map from points in an extent to some kind of data `T`, stored as a `Vec<T>`.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct VecLatticeMap<T, I = YLevelsIndexer> {
-    // Works if I: Default, which is true for I: StatelessIndexer.
+    // Works if I: Default.
     #[serde(skip_deserializing)]
     #[serde(skip_serializing)]
     indexer: PhantomData<I>,
