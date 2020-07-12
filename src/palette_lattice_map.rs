@@ -12,6 +12,7 @@ impl<'a, T, P> LatticeVoxels<'a, T, P>
 where
     P: Into<usize>,
 {
+    #[inline(always)]
     pub fn get_pointed_voxel_info(&'a self, ptr: P) -> &'a T {
         &self.infos[ptr.into()]
     }
@@ -21,6 +22,7 @@ impl<'a, T, P> GetExtent for LatticeVoxels<'a, T, P>
 where
     P: Into<usize>,
 {
+    #[inline(always)]
     fn get_extent(&self) -> &Extent {
         self.map.get_extent()
     }
@@ -31,6 +33,8 @@ where
     P: Clone + Into<usize>,
 {
     type Data = T;
+
+    #[inline(always)]
     fn get_local_ref(&self, p: &Point) -> &T {
         self.get_pointed_voxel_info(self.map.get_local(p))
     }
@@ -46,12 +50,14 @@ impl<'a, T, P> ChunkVoxelsRef<'a, T, P>
 where
     P: Into<usize>,
 {
+    #[inline(always)]
     pub fn get_pointed_voxel_info(&self, ptr: P) -> &T {
         &self.infos[ptr.into()]
     }
 }
 
 impl<'a, T, P> GetExtent for ChunkVoxelsRef<'a, T, P> {
+    #[inline(always)]
     fn get_extent(&self) -> &Extent {
         self.map.get_extent()
     }
@@ -62,6 +68,8 @@ where
     P: Clone + Into<usize>,
 {
     type Data = T;
+
+    #[inline(always)]
     fn get_local_ref(&self, p: &Point) -> &T {
         self.get_pointed_voxel_info(self.map.get_local(p))
     }
@@ -77,12 +85,14 @@ impl<'a, T, P> ChunkVoxelsRefMut<'a, T, P>
 where
     P: Into<usize>,
 {
+    #[inline(always)]
     pub fn get_pointed_voxel_info_mut(&mut self, ptr: P) -> &mut T {
         &mut self.infos[ptr.into()]
     }
 }
 
 impl<'a, T, P> GetExtent for ChunkVoxelsRefMut<'a, T, P> {
+    #[inline(always)]
     fn get_extent(&self) -> &Extent {
         self.map.get_extent()
     }
@@ -93,6 +103,8 @@ where
     P: Clone + Into<usize>,
 {
     type Data = T;
+
+    #[inline(always)]
     fn get_local_ref_mut(&mut self, p: &Point) -> &mut T {
         self.get_pointed_voxel_info_mut(self.map.get_local(p))
     }
@@ -167,6 +179,8 @@ where
     P: Clone + Into<usize>,
 {
     type Data = T;
+
+    #[inline(always)]
     fn maybe_get_world_ref(&self, p: &Point) -> Option<&T> {
         self.map
             .maybe_get_world(p)
@@ -179,6 +193,8 @@ where
     P: Clone + Into<usize>,
 {
     type Data = T;
+
+    #[inline(always)]
     fn maybe_get_world_ref_mut(&mut self, p: &Point) -> Option<&mut T> {
         self.map
             .maybe_get_world(p)

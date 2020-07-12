@@ -51,6 +51,8 @@ where
     T: Clone,
 {
     type Data = T;
+
+    #[inline(always)]
     fn get_local(&self, p: &Point) -> T {
         self.get_linear_ref(self.index_from_local_point(p)).clone()
     }
@@ -58,6 +60,8 @@ where
 
 impl<T, I: Indexer> GetLocalRef for VecLatticeMap<T, I> {
     type Data = T;
+
+    #[inline(always)]
     fn get_local_ref(&self, p: &Point) -> &T {
         self.get_linear_ref(self.index_from_local_point(p))
     }
@@ -65,6 +69,8 @@ impl<T, I: Indexer> GetLocalRef for VecLatticeMap<T, I> {
 
 impl<T, I: Indexer> GetLocalRefMut for VecLatticeMap<T, I> {
     type Data = T;
+
+    #[inline(always)]
     fn get_local_ref_mut(&mut self, p: &Point) -> &mut T {
         self.get_linear_ref_mut(self.index_from_local_point(p))
     }

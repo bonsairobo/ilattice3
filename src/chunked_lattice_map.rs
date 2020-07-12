@@ -116,6 +116,8 @@ where
     T: Clone,
 {
     type Data = T;
+
+    #[inline(always)]
     fn maybe_get_world(&self, p: &Point) -> Option<T> {
         self.get_chunk_containing_point(p)
             .map(|chunk| chunk.get_world(p))
@@ -124,6 +126,8 @@ where
 
 impl<T> MaybeGetWorldRef for ChunkedLatticeMap<T> {
     type Data = T;
+
+    #[inline(always)]
     fn maybe_get_world_ref(&self, p: &Point) -> Option<&T> {
         self.get_chunk_containing_point(p)
             .map(|chunk| chunk.get_world_ref(p))
@@ -132,6 +136,8 @@ impl<T> MaybeGetWorldRef for ChunkedLatticeMap<T> {
 
 impl<T> MaybeGetWorldRefMut for ChunkedLatticeMap<T> {
     type Data = T;
+
+    #[inline(always)]
     fn maybe_get_world_ref_mut(&mut self, p: &Point) -> Option<&mut T> {
         self.get_mut_chunk_containing_point(p)
             .map(|chunk| chunk.get_world_ref_mut(p))
