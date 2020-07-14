@@ -142,7 +142,6 @@ where
 {
     type Data = T;
 
-    #[inline(always)]
     fn get_world(&self, p: &Point) -> Self::Data {
         let p_local = self.get_extent().local_point_from_world_point(p);
 
@@ -156,7 +155,6 @@ where
 {
     type Data = T;
 
-    #[inline(always)]
     fn get_world_ref(&self, p: &Point) -> &T {
         let p_local = self.get_extent().local_point_from_world_point(p);
 
@@ -170,7 +168,6 @@ where
 {
     type Data = T;
 
-    #[inline(always)]
     fn get_world_ref_mut(&mut self, p: &Point) -> &mut T {
         let p_local = self.get_extent().local_point_from_world_point(p);
 
@@ -182,7 +179,6 @@ impl<'a, M, T> GetWorldBorrowable<'a, T, T> for M
 where
     M: GetWorld<Data = T>,
 {
-    #[inline(always)]
     fn get_world_borrowable<'b: 'a>(&'b self, p: &Point) -> T {
         self.get_world(p)
     }
@@ -192,7 +188,6 @@ impl<'a, M, T> GetWorldBorrowable<'a, T, &'a T> for M
 where
     M: GetWorldRef<Data = T>,
 {
-    #[inline(always)]
     fn get_world_borrowable<'b: 'a>(&'b self, p: &Point) -> &'a T {
         self.get_world_ref(p)
     }
@@ -204,7 +199,6 @@ where
 {
     type Data = T;
 
-    #[inline(always)]
     fn maybe_get_world(&self, p: &Point) -> Option<T> {
         if self.get_extent().contains_world(p) {
             Some(self.get_world(p))
@@ -220,7 +214,6 @@ where
 {
     type Data = T;
 
-    #[inline(always)]
     fn maybe_get_world_ref(&self, p: &Point) -> Option<&T> {
         if self.get_extent().contains_world(p) {
             Some(self.get_world_ref(p))
@@ -236,7 +229,6 @@ where
 {
     type Data = T;
 
-    #[inline(always)]
     fn maybe_get_world_ref_mut(&mut self, p: &Point) -> Option<&mut T> {
         if self.get_extent().contains_world(p) {
             Some(self.get_world_ref_mut(p))

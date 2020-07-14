@@ -41,7 +41,7 @@ pub use normal::{
     ALL_DIRECTIONS, ALL_NORMALS,
 };
 pub use palette_lattice_map::{
-    ChunkVoxelsRef, ChunkVoxelsRefMut, ChunkedPaletteLatticeMap, LatticeVoxels,
+    ChunkVoxelsRef, ChunkVoxelsRefMut, ChunkedPaletteLatticeMap, GetPaletteAddress, LatticeVoxels,
 };
 pub use point::Point;
 pub use tile::Tile;

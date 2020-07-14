@@ -69,6 +69,7 @@ impl<T> DirectionIndex<T> {
         &mut self.values[direction as usize]
     }
 
+    // TODO: should impl IntoIterator
     pub fn iter(&self) -> impl Iterator<Item = (Direction, &T)> {
         self.values.iter().enumerate().map(|(i, v)| {
             (
@@ -178,12 +179,11 @@ pub fn normal_from_component_index(index: usize, negative: bool) -> Point {
 /// Returns the normal vector with the smallest angle from `v`.
 pub fn closest_normal(v: &[f32; 3]) -> Point {
     // Get the index and value of the largest vector component (by magnitude).
-    let (max_i, max_val): (usize, &f32) =
-        v
-            .iter()
-            .enumerate()
-            .max_by(|(_i, d1), (_j, d2)| d1.abs().partial_cmp(&d2.abs()).unwrap())
-            .unwrap();
+    let (max_i, max_val): (usize, &f32) = v
+        .iter()
+        .enumerate()
+        .max_by(|(_i, d1), (_j, d2)| d1.abs().partial_cmp(&d2.abs()).unwrap())
+        .unwrap();
 
     normal_from_component_index(max_i, *max_val < 0.0)
 }
@@ -281,12 +281,30 @@ mod tests {
 
     #[test]
     fn test_normal_from_component_index() {
-        assert_eq!(normal_from_component_index(0, false), Normal::Axis(Direction::PosX).into());
-        assert_eq!(normal_from_component_index(0, true), Normal::Axis(Direction::NegX).into());
-        assert_eq!(normal_from_component_index(1, false), Normal::Axis(Direction::PosY).into());
-        assert_eq!(normal_from_component_index(1, true), Normal::Axis(Direction::NegY).into());
-        assert_eq!(normal_from_component_index(2, false), Normal::Axis(Direction::PosZ).into());
-        assert_eq!(normal_from_component_index(2, true), Normal::Axis(Direction::NegZ).into());
+        assert_eq!(
+            normal_from_component_index(0, false),
+            Normal::Axis(Direction::PosX).into()
+        );
+        assert_eq!(
+            normal_from_component_index(0, true),
+            Normal::Axis(Direction::NegX).into()
+        );
+        assert_eq!(
+            normal_from_component_index(1, false),
+            Normal::Axis(Direction::PosY).into()
+        );
+        assert_eq!(
+            normal_from_component_index(1, true),
+            Normal::Axis(Direction::NegY).into()
+        );
+        assert_eq!(
+            normal_from_component_index(2, false),
+            Normal::Axis(Direction::PosZ).into()
+        );
+        assert_eq!(
+            normal_from_component_index(2, true),
+            Normal::Axis(Direction::NegZ).into()
+        );
     }
 
     #[test]
