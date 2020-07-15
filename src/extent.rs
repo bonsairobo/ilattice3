@@ -1,9 +1,8 @@
-use crate::{prelude::*, DirectionIndex, Indexer, Point};
+use crate::{prelude::*, DirectionIndex, Point};
 
 use serde::{Deserialize, Serialize};
 use std::{
     borrow::Borrow,
-    marker::PhantomData,
     ops::{Add, Sub},
 };
 
@@ -374,127 +373,6 @@ impl IntoIterator for &Extent {
     }
 }
 
-/// An iterator over all linear indices in an extent (in no specific order). This is useful for
-/// strict performance requirements (where calling `I::index_from_local_point` on every point is too
-/// expensive).
-#[derive(Debug)]
-pub struct LinearExtentIterator {
-    // Size of the extent.
-    dimensions: [usize; 3],
-    // How far to move through the array in order to move 1 unit in some dimension.
-    strides: [usize; 3],
-    // Stores indices used to reset the cursor on boundaries.
-    reset_cursors: [usize; 2],
-    // Strictly for keeping track of where we are in the extent.
-    dimensional_cursor: [usize; 3],
-    // The actual linear cursor.
-    cursor: usize,
-    // True once we've iterated the entire extent.
-    completed: bool,
-}
-
-impl LinearExtentIterator {
-    /// Creates an iterator over a *local* `Extent`. An `Extent` in world coordinates will produce
-    /// incorrect linear indices.
-    pub fn new<I>(local_extent: Extent) -> Self
-    where
-        I: Indexer,
-    {
-        let sup = local_extent.get_local_supremum();
-        let dimensions = [sup.x as usize, sup.y as usize, sup.z as usize];
-        let strides = [
-            I::index_from_local_point(sup, &[1, 0, 0].into()),
-            I::index_from_local_point(sup, &[0, 1, 0].into()),
-            I::index_from_local_point(sup, &[0, 0, 1].into()),
-        ];
-        let min = local_extent.get_minimum();
-        let cursor = I::index_from_local_point(sup, &min);
-        let reset_cursors = [cursor, cursor];
-        let dimensional_cursor = [0, 0, 0];
-
-        println!("strides = {:?}", strides);
-        println!("reset_cursors = {:?}", reset_cursors);
-
-        LinearExtentIterator {
-            dimensions,
-            strides,
-            reset_cursors,
-            dimensional_cursor,
-            cursor,
-            completed: local_extent.is_empty(),
-        }
-    }
-}
-
-/// Returns a `Point` for each world coordinate in the extent.
-impl Iterator for LinearExtentIterator {
-    type Item = usize;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.completed {
-            return None;
-        }
-
-        let old_cursor = self.cursor;
-
-        self.dimensional_cursor[2] += 1;
-        self.cursor += self.strides[2];
-
-        if self.dimensional_cursor[2] == self.dimensions[2] {
-            self.dimensional_cursor[2] = 0;
-            self.cursor = self.reset_cursors[1];
-
-            self.dimensional_cursor[1] += 1;
-            self.cursor += self.strides[1];
-            self.reset_cursors[1] = self.cursor;
-
-            if self.dimensional_cursor[1] == self.dimensions[1] {
-                self.dimensional_cursor[1] = 0;
-                self.cursor = self.reset_cursors[0];
-
-                self.dimensional_cursor[0] += 1;
-                self.cursor += self.strides[0];
-                self.reset_cursors[0] = self.cursor;
-                self.reset_cursors[1] = self.cursor;
-
-                if self.dimensional_cursor[0] == self.dimensions[0] {
-                    self.completed = true;
-                }
-            }
-        }
-
-        Some(old_cursor)
-    }
-}
-
-/// A newtype that implements `IntoIterator<IntoIter = LinearExtentIterator>`. Only works with an
-/// `Extent` in *local* coordinates!
-pub struct LinearIterator<I> {
-    extent: Extent,
-    indexer: PhantomData<I>,
-}
-
-impl<I> LinearIterator<I> {
-    pub fn new(extent: Extent) -> Self {
-        LinearIterator {
-            extent,
-            indexer: Default::default(),
-        }
-    }
-}
-
-impl<I> IntoIterator for LinearIterator<I>
-where
-    I: Indexer,
-{
-    type Item = usize;
-    type IntoIter = LinearExtentIterator;
-
-    fn into_iter(self) -> Self::IntoIter {
-        LinearExtentIterator::new::<I>(self.extent)
-    }
-}
-
 /// Returns the smallest extent containing all of the given points.
 pub fn bounding_extent<I>(points: I) -> Extent
 where
@@ -606,7 +484,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{test_util::assert_elements_eq, YLevelsIndexer};
+    use crate::test_util::assert_elements_eq;
 
     #[test]
     fn test_empty_extent_iterator_generates_nothing() {
@@ -641,33 +519,6 @@ mod tests {
         for p in &extent {
             assert!(extent.contains_world(&p));
         }
-    }
-
-    fn assert_linear_extent_iterator_matches_point_iterator(extent: Extent) {
-        let expected_indices: Vec<_> = extent
-            .into_iter()
-            .map(|p| YLevelsIndexer::index_from_local_point(extent.get_local_supremum(), &p))
-            .collect();
-        let actual_indices: Vec<_> = LinearIterator::<YLevelsIndexer>::new(extent)
-            .into_iter()
-            .collect();
-        assert_eq!(expected_indices, actual_indices);
-    }
-
-    #[test]
-    fn test_linear_extent_iterator() {
-        let extent = Extent::from_min_and_world_supremum([0, 0, 0].into(), [1, 1, 1].into());
-        assert_linear_extent_iterator_matches_point_iterator(extent);
-        let extent = Extent::from_min_and_world_supremum([0, 0, 0].into(), [2, 1, 1].into());
-        assert_linear_extent_iterator_matches_point_iterator(extent);
-        let extent = Extent::from_min_and_world_supremum([0, 0, 0].into(), [1, 2, 1].into());
-        assert_linear_extent_iterator_matches_point_iterator(extent);
-        let extent = Extent::from_min_and_world_supremum([0, 0, 0].into(), [1, 1, 2].into());
-        assert_linear_extent_iterator_matches_point_iterator(extent);
-        let extent = Extent::from_min_and_world_supremum([0, 0, 0].into(), [2, 2, 2].into());
-        assert_linear_extent_iterator_matches_point_iterator(extent);
-        let extent = Extent::from_min_and_world_supremum([1, 2, 3].into(), [4, 5, 6].into());
-        assert_linear_extent_iterator_matches_point_iterator(extent);
     }
 
     #[test]

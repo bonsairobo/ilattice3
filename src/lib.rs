@@ -27,7 +27,7 @@ mod test_util;
 pub use chunked_lattice_map::{ChunkKeyIterator, ChunkedLatticeMap, ChunkedLatticeMapIterator};
 pub use extent::{
     bounding_extent, copy_extent, copy_extent_to_position, fill_extent, map_extent, Extent,
-    ExtentIterator, GetExtent, LinearExtentIterator, LinearIterator,
+    ExtentIterator, GetExtent,
 };
 pub use fn_lattice_map::FnLatticeMap;
 pub use indexer::{HasIndexer, Indexer, PeriodicYLevelsIndexer, YLevelsIndexer};
