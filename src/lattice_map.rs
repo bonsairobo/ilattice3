@@ -93,6 +93,10 @@ pub trait MaybeGetWorldRefMut {
 //  | '_ \| |/ _` | '_ \| |/ / _ \ __/ __|
 //  | |_) | | (_| | | | |   <  __/ |_\__ \
 //  |_.__/|_|\__,_|_| |_|_|\_\___|\__|___/
+//
+// There are more blanket impls I would like once Rust has specialization:
+// - MaybeGetX for any GetX that just always returns Some
+// - GetWorld<T> for any GetWorldRef<T> where T: Clone
 
 impl<M, T, I> GetLocal for M
 where
@@ -237,10 +241,6 @@ where
         }
     }
 }
-
-// There are more blanket impls I would like once Rust has specialization:
-// - MaybeGetX for any GetX that just always returns Some
-// - GetWorld<T> for any GetWorldRef<T> where T: Clone
 
 /// An iterator over the points and data in a map.
 pub struct LatticeMapKeyValIterator<'a, V, T> {

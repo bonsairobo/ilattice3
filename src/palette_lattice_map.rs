@@ -1,7 +1,6 @@
-//! The various Get* traits are not implemented for these structures because it is customary for
-//! users to store data in two places: the palette and the underlying lattice map. We don't
-//! prescribe an implementation. Users may want to implement the Get* traits in multiple ways, and
-//! they can use newtypes that wrap these types to do so.
+//! It is customary for users to store data in two places: the palette and the underlying lattice
+//! map. Users may want to implement the Get* traits in multiple ways, and they can use newtypes
+//! that wrap these types to do so.
 
 use crate::{
     prelude::*, ChunkedLatticeMap, Extent, HasIndexer, Indexer, Point, VecLatticeMap,
@@ -148,5 +147,55 @@ where
         self.map
             .chunk_keys()
             .map(move |chunk_key| (chunk_key, self.get_chunk_and_boundary(chunk_key)))
+    }
+}
+
+impl<'a, T, P, I> GetLocalRef for ChunkVoxelsRef<'a, T, P, I>
+where
+    P: Clone + GetPaletteAddress,
+    I: Indexer,
+{
+    type Data = T;
+
+    fn get_local_ref(&self, p: &Point) -> &T {
+        self.get_pointed_voxel_info(self.map.get_local(p))
+    }
+}
+
+impl<'a, T, P, I> GetLocalRefMut for ChunkVoxelsRefMut<'a, T, P, I>
+where
+    P: Clone + GetPaletteAddress,
+    I: Indexer,
+{
+    type Data = T;
+
+    fn get_local_ref_mut(&mut self, p: &Point) -> &mut T {
+        self.get_pointed_voxel_info_mut(self.map.get_local(p))
+    }
+}
+
+impl<T, P> MaybeGetWorldRef for ChunkedPaletteLatticeMap<T, P>
+where
+    P: Clone + GetPaletteAddress,
+{
+    type Data = T;
+
+    fn maybe_get_world_ref(&self, p: &Point) -> Option<&T> {
+        self.map
+            .maybe_get_world(p)
+            .map(|ptr| &self.palette[ptr.get_palette_address()])
+    }
+}
+
+impl<T, P> MaybeGetWorldRefMut for ChunkedPaletteLatticeMap<T, P>
+where
+    P: Clone + GetPaletteAddress,
+{
+    type Data = T;
+
+    fn maybe_get_world_ref_mut(&mut self, p: &Point) -> Option<&mut T> {
+        self.map
+            .maybe_get_world(p)
+            .map(move |ptr| &mut self.palette[ptr.get_palette_address()])
     }
 }
