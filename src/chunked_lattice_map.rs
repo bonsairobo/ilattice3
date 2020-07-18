@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{hash_map, HashMap};
 
 /// Stores a partial function on ZxZxZ in same-sized chunks using a hash map.
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct ChunkedLatticeMap<T, I = YLevelsIndexer> {
     chunk_size: Point,
     map: HashMap<Point, VecLatticeMap<T, I>>,
