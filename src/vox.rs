@@ -46,7 +46,7 @@ pub type VoxColor = u16;
 pub const EMPTY_VOX_COLOR: VoxColor = std::u8::MAX as u16 + 1;
 
 impl<I: Indexer> VecLatticeMap<VoxColor, I> {
-    pub fn from_vox_with_indexer(indexer: I, data: &DotVoxData, model_index: usize) -> Self {
+    pub fn from_vox_with_indexer(_indexer: I, data: &DotVoxData, model_index: usize) -> Self {
         let DotVoxData { models, .. } = data;
         let Model {
             size: Size { x, y, z },
@@ -54,7 +54,7 @@ impl<I: Indexer> VecLatticeMap<VoxColor, I> {
         } = &models[model_index];
         let size = Point::new(*x as i32, *y as i32, *z as i32);
         let extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), size);
-        let mut map = VecLatticeMap::fill_with_indexer(indexer, extent, EMPTY_VOX_COLOR);
+        let mut map = VecLatticeMap::fill(extent, EMPTY_VOX_COLOR);
         for Voxel { x, y, z, i } in voxels.into_iter() {
             let point = [*x as i32, *y as i32, *z as i32].into();
             *map.get_local_ref_mut(&point) = *i as VoxColor;
