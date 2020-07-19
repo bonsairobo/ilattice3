@@ -50,7 +50,7 @@ impl<C, I: Indexer> Tile<C, I> {
     }
 }
 
-impl<C: Clone, I: Clone + Indexer> Tile<C, I> {
+impl<C: Clone, I: Indexer> Tile<C, I> {
     pub fn put_in_map<T: From<C>>(self, extent: &Extent, dst: &mut VecLatticeMap<T, I>) {
         let src = self.put_in_extent(*extent);
         copy_extent(&src, dst, extent);
