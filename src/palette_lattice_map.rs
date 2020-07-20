@@ -23,7 +23,7 @@ impl<'a, T, P, I> LatticeVoxels<'a, T, P, I>
 where
     P: GetPaletteAddress,
 {
-    pub fn get_pointed_voxel_info(&'a self, ptr: P) -> &'a T {
+    pub fn get_pointed_voxel_info(&'a self, ptr: &P) -> &'a T {
         &self.palette[ptr.get_palette_address()]
     }
 }
@@ -51,7 +51,7 @@ impl<'a, T, P, I> ChunkVoxelsRef<'a, T, P, I>
 where
     P: GetPaletteAddress,
 {
-    pub fn get_pointed_voxel_info(&self, ptr: P) -> &T {
+    pub fn get_pointed_voxel_info(&self, ptr: &P) -> &T {
         &self.palette[ptr.get_palette_address()]
     }
 }
@@ -72,7 +72,7 @@ impl<'a, T, P, I> ChunkVoxelsRefMut<'a, T, P, I>
 where
     P: GetPaletteAddress,
 {
-    pub fn get_pointed_voxel_info_mut(&mut self, ptr: P) -> &mut T {
+    pub fn get_pointed_voxel_info_mut(&mut self, ptr: &P) -> &mut T {
         &mut self.palette[ptr.get_palette_address()]
     }
 }
@@ -171,7 +171,7 @@ where
     type Data = T;
 
     fn get_linear_ref(&self, i: usize) -> &T {
-        &self.palette[self.map.get_linear_ref(i).get_palette_address()]
+        self.get_pointed_voxel_info(self.map.get_linear_ref(i))
     }
 }
 
@@ -183,7 +183,9 @@ where
     type Data = T;
 
     fn get_local_ref(&self, p: &Point) -> &T {
-        self.get_pointed_voxel_info(self.map.get_local(p))
+        let ptr = self.map.get_local(p);
+
+        self.get_pointed_voxel_info(&ptr)
     }
 }
 
@@ -195,7 +197,9 @@ where
     type Data = T;
 
     fn get_local_ref_mut(&mut self, p: &Point) -> &mut T {
-        self.get_pointed_voxel_info_mut(self.map.get_local(p))
+        let ptr = self.map.get_local(p);
+
+        self.get_pointed_voxel_info_mut(&ptr)
     }
 }
 
