@@ -54,6 +54,7 @@ pub trait IsEmpty: Eq + Sized {
 
 pub mod prelude {
     pub use crate::extent::GetExtent;
+    pub use crate::indexer::HasIndexer;
     pub use crate::lattice_map::{
         GetLinear, GetLinearRef, GetLinearRefMut, GetLocal, GetLocalRef, GetLocalRefMut, GetWorld,
         GetWorldBorrowable, GetWorldRef, GetWorldRefMut, LatticeMapIter, LatticeMapKeyValIterator,
