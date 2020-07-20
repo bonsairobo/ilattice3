@@ -150,6 +150,32 @@ where
     }
 }
 
+impl<'a, T, P, I> GetLinear for LatticeVoxels<'a, T, P, I>
+where
+    T: Clone,
+    P: GetPaletteAddress,
+    I: Indexer,
+{
+    type Data = T;
+
+    fn get_linear(&self, i: usize) -> T {
+        self.palette[self.map.get_linear_ref(i).get_palette_address()].clone()
+    }
+}
+
+impl<'a, T, P, I> GetLinearRef for LatticeVoxels<'a, T, P, I>
+where
+    T: Clone,
+    P: GetPaletteAddress,
+    I: Indexer,
+{
+    type Data = T;
+
+    fn get_linear_ref(&self, i: usize) -> &T {
+        &self.palette[self.map.get_linear_ref(i).get_palette_address()]
+    }
+}
+
 impl<'a, T, P, I> GetLocalRef for ChunkVoxelsRef<'a, T, P, I>
 where
     P: Clone + GetPaletteAddress,
