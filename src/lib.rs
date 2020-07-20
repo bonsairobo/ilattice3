@@ -1,5 +1,6 @@
 //! Data types, structures, and algorithms for 3D integer lattices (voxels)
 
+pub mod algos;
 pub mod chunked_lattice_map;
 pub mod extent;
 pub mod fn_lattice_map;
@@ -24,6 +25,7 @@ mod image;
 #[cfg(test)]
 mod test_util;
 
+pub use algos::find_surface_voxels;
 pub use chunked_lattice_map::{ChunkKeyIterator, ChunkedLatticeMap, ChunkedLatticeMapIterator};
 pub use extent::{
     bounding_extent, copy_extent, copy_extent_to_position, fill_extent, map_extent, Extent,
@@ -48,7 +50,7 @@ pub use tile::Tile;
 pub use transform::{Matrix, Transform, OCTAHEDRAL_GROUP, Z_STATIONARY_OCTAHEDRAL_GROUP};
 pub use vec_lattice_map::VecLatticeMap;
 
-pub trait IsEmpty: Eq + Sized {
+pub trait IsEmpty {
     fn is_empty(&self) -> bool;
 }
 
