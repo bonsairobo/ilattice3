@@ -15,7 +15,7 @@ where
     // Precompute the offsets for adjacency checks. Some of these usize values will be considered
     // "negative," although they have wrapped around.
     let mut linear_offsets = [0; 6];
-    for (i, offset) in FACE_ADJACENT_OFFSETS[0..3].iter().enumerate() {
+    for (i, offset) in FACE_ADJACENT_OFFSETS.iter().enumerate() {
         linear_offsets[i] = I::index_from_local_point(sup, offset);
     }
 
@@ -47,3 +47,38 @@ const FACE_ADJACENT_OFFSETS: [Point; 6] = [
     Point { x: 0, y: -1, z: 0 },
     Point { x: 0, y: 0, z: -1 },
 ];
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::{
+        fill_extent, prelude::*, test_util::assert_elements_eq, VecLatticeMap, YLevelsIndexer,
+    };
+
+    #[derive(Clone)]
+    struct Voxel(bool);
+
+    impl IsEmpty for Voxel {
+        fn is_empty(&self) -> bool {
+            !self.0
+        }
+    }
+
+    #[test]
+    fn find_surface_voxels_cube_side_length_3() {
+        let mut voxels: VecLatticeMap<_, YLevelsIndexer> = VecLatticeMap::fill(
+            Extent::from_min_and_local_supremum([0, 0, 0].into(), [5, 5, 5].into()),
+            Voxel(false),
+        );
+
+        let center = [2, 2, 2].into();
+        let solid_extent = Extent::from_center_and_radius(center, 1);
+        fill_extent(&mut voxels, &solid_extent, Voxel(true));
+
+        let surface_points = find_surface_voxels(&voxels, voxels.get_extent());
+
+        // Should exclude the center point.
+        let expected_surface_points = solid_extent.into_iter().filter(|p| *p != center).collect();
+        assert_elements_eq(&surface_points, &expected_surface_points);
+    }
+}
