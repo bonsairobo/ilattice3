@@ -165,7 +165,6 @@ where
 
 impl<'a, T, P, I> GetLinearRef for LatticeVoxels<'a, T, P, I>
 where
-    T: Clone,
     P: GetPaletteAddress,
     I: Indexer,
 {
