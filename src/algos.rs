@@ -28,7 +28,7 @@ where
         }
         for linear_offset in linear_offsets.iter() {
             let p_linear_offset = p_linear.wrapping_add(*linear_offset);
-            let is_empty = voxels.get_linear_ref(p_linear_offset as usize).is_empty();
+            let is_empty = voxels.get_linear_ref(p_linear_offset).is_empty();
             if is_empty {
                 surface_points.push(p + min);
                 break;
