@@ -64,3 +64,12 @@ pub mod prelude {
     };
     pub use crate::point::Point;
 }
+
+pub const FACE_ADJACENT_OFFSETS: [Point; 6] = [
+    Point { x: 1, y: 0, z: 0 },
+    Point { x: 0, y: 1, z: 0 },
+    Point { x: 0, y: 0, z: 1 },
+    Point { x: -1, y: 0, z: 0 },
+    Point { x: 0, y: -1, z: 0 },
+    Point { x: 0, y: 0, z: -1 },
+];

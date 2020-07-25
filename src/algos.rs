@@ -1,4 +1,4 @@
-use crate::{Extent, GetLinearRef, HasIndexer, Indexer, IsEmpty, Point};
+use crate::{Extent, GetLinearRef, HasIndexer, Indexer, IsEmpty, Point, FACE_ADJACENT_OFFSETS};
 
 /// Returns the voxels that are considered "visible," i.e. they are solid and face-adjacent to an
 /// empty voxel. Voxels on the boundary of `extent` will not be considered candidates for being
@@ -38,15 +38,6 @@ where
 
     surface_points
 }
-
-const FACE_ADJACENT_OFFSETS: [Point; 6] = [
-    Point { x: 1, y: 0, z: 0 },
-    Point { x: 0, y: 1, z: 0 },
-    Point { x: 0, y: 0, z: 1 },
-    Point { x: -1, y: 0, z: 0 },
-    Point { x: 0, y: -1, z: 0 },
-    Point { x: 0, y: 0, z: -1 },
-];
 
 #[cfg(test)]
 mod test {
