@@ -9,6 +9,17 @@ pub trait Indexer {
 
     /// `s` is the local strict supremum of an extent. `index` is a linear index.
     fn local_point_from_index(s: &Point, index: usize) -> Point;
+
+    fn get_strides(s: &Point) -> [usize; 3] {
+        let basis: [Point; 3] = [[1, 0, 0].into(), [0, 1, 0].into(), [0, 0, 1].into()];
+
+        let mut strides = [0; 3];
+        for (i, v) in basis.iter().enumerate() {
+            strides[i] = Self::index_from_local_point(s, v);
+        }
+
+        strides
+    }
 }
 
 pub trait PeriodicIndexer: Indexer {}
