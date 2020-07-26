@@ -23,6 +23,14 @@ impl<T, I> ChunkedLatticeMap<T, I> {
         }
     }
 
+    pub fn insert_chunk(
+        &mut self,
+        key: Point,
+        chunk: VecLatticeMap<T, I>,
+    ) -> Option<VecLatticeMap<T, I>> {
+        self.map.insert(key, chunk)
+    }
+
     pub fn chunk_key(&self, point: &Point) -> Point {
         *point / self.chunk_size
     }
