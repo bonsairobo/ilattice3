@@ -65,15 +65,22 @@ impl<T, I> ChunkedLatticeMap<T, I> {
         self.map.get_mut(key)
     }
 
-    pub fn get_chunk_containing_point(&self, point: &Point) -> Option<&VecLatticeMap<T, I>> {
-        self.get_chunk(&self.chunk_key(point))
+    pub fn get_chunk_containing_point(
+        &self,
+        point: &Point,
+    ) -> Option<(Point, &VecLatticeMap<T, I>)> {
+        let chunk_key = self.chunk_key(point);
+
+        self.get_chunk(&chunk_key).map(|c| (chunk_key, c))
     }
 
     pub fn get_mut_chunk_containing_point(
         &mut self,
         point: &Point,
-    ) -> Option<&mut VecLatticeMap<T, I>> {
-        self.get_mut_chunk(&self.chunk_key(point))
+    ) -> Option<(Point, &mut VecLatticeMap<T, I>)> {
+        let chunk_key = self.chunk_key(point);
+
+        self.get_mut_chunk(&chunk_key).map(|c| (chunk_key, c))
     }
 
     /// Returns an iterator over all points and corresponding values in the given extent. If chunks
@@ -123,7 +130,7 @@ where
 
     fn maybe_get_world(&self, p: &Point) -> Option<T> {
         self.get_chunk_containing_point(p)
-            .map(|chunk| chunk.get_world(p))
+            .map(|(_key, chunk)| chunk.get_world(p))
     }
 }
 
@@ -132,7 +139,7 @@ impl<T> MaybeGetWorldRef for ChunkedLatticeMap<T> {
 
     fn maybe_get_world_ref(&self, p: &Point) -> Option<&T> {
         self.get_chunk_containing_point(p)
-            .map(|chunk| chunk.get_world_ref(p))
+            .map(|(_key, chunk)| chunk.get_world_ref(p))
     }
 }
 
@@ -141,7 +148,7 @@ impl<T> MaybeGetWorldRefMut for ChunkedLatticeMap<T> {
 
     fn maybe_get_world_ref_mut(&mut self, p: &Point) -> Option<&mut T> {
         self.get_mut_chunk_containing_point(p)
-            .map(|chunk| chunk.get_world_ref_mut(p))
+            .map(|(_key, chunk)| chunk.get_world_ref_mut(p))
     }
 }
 
@@ -164,14 +171,17 @@ where
 {
     /// Get mutable data for point `p`. If `p` does not exist, the chunk will be filled with the
     /// given `default` value.
-    pub fn get_mut_or_create(&mut self, p: &Point, default: T) -> &mut T {
+    pub fn get_mut_or_create(&mut self, p: &Point, default: T) -> (Point, &mut T) {
         let key = self.chunk_key(p);
         let extent = self.extent_for_chunk_key(&key);
 
-        self.map
-            .entry(key)
-            .or_insert_with(|| VecLatticeMap::fill(extent, default))
-            .get_world_ref_mut(p)
+        (
+            key,
+            self.map
+                .entry(key)
+                .or_insert_with(|| VecLatticeMap::fill(extent, default))
+                .get_world_ref_mut(p),
+        )
     }
 }
 
