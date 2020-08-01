@@ -183,12 +183,14 @@ where
                 .get_world_ref_mut(p),
         )
     }
-}
 
-impl<T: Clone + Default, I> ChunkedLatticeMap<T, I>
-where
-    I: Indexer,
-{
+    /// `fill_default` will be the value of points outside the given extent that nonetheless must be
+    /// filled in each non-sparse chunk.
+    pub fn fill_extent(&mut self, extent: &Extent, val: T, fill_default: T) {
+        let fill_lat = VecLatticeMap::<_, YLevelsIndexer>::fill(*extent, val);
+        self.copy_map_into_chunks(&fill_lat, fill_default);
+    }
+
     pub fn copy_map_into_chunks<V>(&mut self, map: &V, fill_default: T)
     where
         V: GetWorld<Data = T> + GetExtent,
@@ -202,14 +204,12 @@ where
             copy_extent(map, chunk, &chunk_extent.intersection(&map.get_extent()));
         }
     }
+}
 
-    /// `fill_default` will be the value of points outside the given extent that nonetheless must be
-    /// filled in each non-sparse chunk.
-    pub fn fill_extent(&mut self, extent: &Extent, val: T, fill_default: T) {
-        let fill_lat = VecLatticeMap::<_, YLevelsIndexer>::fill(*extent, val);
-        self.copy_map_into_chunks(&fill_lat, fill_default);
-    }
-
+impl<T: Clone + Default, I> ChunkedLatticeMap<T, I>
+where
+    I: Indexer,
+{
     pub fn copy_extent_into_new_map(&self, extent: Extent) -> VecLatticeMap<T, I> {
         let mut new_map = VecLatticeMap::fill(extent, T::default());
         for (p, val) in self.iter_point_values(extent) {
