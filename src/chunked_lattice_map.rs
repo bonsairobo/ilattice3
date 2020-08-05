@@ -9,8 +9,8 @@ use std::collections::{hash_map, HashMap};
 /// Stores a partial function on ZxZxZ in same-sized chunks using a hash map.
 #[derive(Clone, Deserialize, Serialize)]
 pub struct ChunkedLatticeMap<T, I = YLevelsIndexer> {
-    chunk_size: Point,
-    map: HashMap<Point, VecLatticeMap<T, I>>,
+    pub chunk_size: Point,
+    pub map: HashMap<Point, VecLatticeMap<T, I>>,
 }
 
 impl<T, I> ChunkedLatticeMap<T, I> {
