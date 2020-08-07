@@ -175,6 +175,13 @@ where
     }
 }
 
+impl<'a, T, P, I> HasIndexer for ChunkVoxelsRef<'a, T, P, I>
+where
+    I: Indexer,
+{
+    type Indexer = I;
+}
+
 impl<'a, T, P, I> GetLinearRef for ChunkVoxelsRef<'a, T, P, I>
 where
     P: Clone + GetPaletteAddress,
@@ -184,20 +191,6 @@ where
 
     fn get_linear_ref(&self, i: usize) -> &Self::Data {
         let ptr = self.map.get_linear(i);
-
-        self.get_pointed_voxel_info(&ptr)
-    }
-}
-
-impl<'a, T, P, I> GetLocalRef for ChunkVoxelsRef<'a, T, P, I>
-where
-    P: Clone + GetPaletteAddress,
-    I: Indexer,
-{
-    type Data = T;
-
-    fn get_local_ref(&self, p: &Point) -> &T {
-        let ptr = self.map.get_local(p);
 
         self.get_pointed_voxel_info(&ptr)
     }
