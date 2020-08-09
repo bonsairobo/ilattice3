@@ -25,7 +25,7 @@ mod image;
 #[cfg(test)]
 mod test_util;
 
-pub use algos::find_surface_voxels;
+pub use algos::{find_surface_voxels, flood_fill_local, flood_fill_world};
 pub use chunked_lattice_map::{ChunkKeyIterator, ChunkedLatticeMap, ChunkedLatticeMapIterator};
 pub use extent::{
     bounding_extent, copy_extent, copy_extent_to_position, fill_extent, map_extent, Extent,
