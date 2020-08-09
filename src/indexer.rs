@@ -4,19 +4,22 @@ use serde::{Deserialize, Serialize};
 
 /// Describes how to convert from a 3D point to a linear array index (and back).
 pub trait Indexer {
-    /// `s` is the local strict supremum of an extent. `p` is a local point.
-    fn index_from_local_point(s: &Point, p: &Point) -> usize;
+    /// `sup` is the local strict supremum of an extent. `p` is a local point.
+    fn index_from_local_point(sup: &Point, p: &Point) -> usize;
 
-    /// `s` is the local strict supremum of an extent. `index` is a linear index.
-    fn local_point_from_index(s: &Point, index: usize) -> Point;
+    /// `sup` is the local strict supremum of an extent. `index` is a linear index.
+    fn local_point_from_index(sup: &Point, index: usize) -> Point;
 
-    fn get_strides(s: &Point) -> [usize; 3] {
-        let basis: [Point; 3] = [[1, 0, 0].into(), [0, 1, 0].into(), [0, 0, 1].into()];
-
-        let mut strides = [0; 3];
-        for (i, v) in basis.iter().enumerate() {
-            strides[i] = Self::index_from_local_point(s, v);
+    fn linear_strides(sup: &Point, points: &[Point], offsets: &mut [usize]) {
+        for (i, v) in points.iter().enumerate() {
+            offsets[i] = Self::index_from_local_point(sup, v);
         }
+    }
+
+    fn linear_xyz_strides(sup: &Point) -> [usize; 3] {
+        let xyz: [Point; 3] = [[1, 0, 0].into(), [0, 1, 0].into(), [0, 0, 1].into()];
+        let mut strides = [0; 3];
+        Self::linear_strides(sup, &xyz, &mut strides);
 
         strides
     }
