@@ -130,6 +130,17 @@ where
     P: Clone + Default,
     I: Indexer,
 {
+    pub fn copy_extent_into_new_map(&self, extent: Extent) -> LatticeVoxels<T, P, I> {
+        let ChunkedPaletteLatticeMap { map, palette } = self;
+
+        let voxels = map.copy_extent_into_new_map(extent);
+
+        LatticeVoxels {
+            palette,
+            map: voxels,
+        }
+    }
+
     pub fn get_chunk_and_boundary(&self, chunk_key: &Point) -> LatticeVoxels<T, P, I> {
         let ChunkedPaletteLatticeMap { map, palette } = self;
 
