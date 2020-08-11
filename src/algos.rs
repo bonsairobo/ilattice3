@@ -28,6 +28,7 @@ where
     world_filled
 }
 
+// PERF: Could be faster with scanlines.
 /// Find all points inside of `local_extent` that are path-connected to `local_seed` and satisfy
 /// `predicate`. `local_extent` and `local_seed` should be given in the local coordinates of
 /// `voxels`. Returns points in local coordinates.
