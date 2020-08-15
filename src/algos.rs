@@ -73,7 +73,7 @@ where
         for (offset, linear_offset) in FACE_ADJACENT_OFFSETS.iter().zip(linear_offsets.iter()) {
             let p_offset = p + *offset;
             if local_extent.contains_world(&p_offset) {
-                stack.push((p_offset, p_linear + linear_offset))
+                stack.push((p_offset, p_linear.wrapping_add(*linear_offset)))
             }
         }
     }
