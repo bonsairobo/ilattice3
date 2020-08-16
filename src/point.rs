@@ -250,3 +250,53 @@ impl Div<Point> for Point {
         self.div_floor(&rhs)
     }
 }
+
+pub const FACE_ADJACENT_OFFSETS: [Point; 6] = [
+    Point { x: 1, y: 0, z: 0 },
+    Point { x: 0, y: 1, z: 0 },
+    Point { x: 0, y: 0, z: 1 },
+    Point { x: -1, y: 0, z: 0 },
+    Point { x: 0, y: -1, z: 0 },
+    Point { x: 0, y: 0, z: -1 },
+];
+
+#[rustfmt::skip]
+pub const ALL_ADJACENT_OFFSETS: [Point; 26] = [
+    Point { x: -1, y: -1, z: -1 },
+    Point { x: -1, y: -1, z:  0 },
+    Point { x: -1, y: -1, z:  1 },
+    Point { x: -1, y:  0, z: -1 },
+    Point { x: -1, y:  0, z:  0 },
+    Point { x: -1, y:  0, z:  1 },
+    Point { x: -1, y:  1, z: -1 },
+    Point { x: -1, y:  1, z:  0 },
+    Point { x: -1, y:  1, z:  1 },
+    Point { x:  0, y: -1, z: -1 },
+    Point { x:  0, y: -1, z:  0 },
+    Point { x:  0, y: -1, z:  1 },
+    Point { x:  0, y:  0, z: -1 },
+    Point { x:  0, y:  0, z:  1 },
+    Point { x:  0, y:  1, z: -1 },
+    Point { x:  0, y:  1, z:  0 },
+    Point { x:  0, y:  1, z:  1 },
+    Point { x:  1, y: -1, z: -1 },
+    Point { x:  1, y: -1, z:  0 },
+    Point { x:  1, y: -1, z:  1 },
+    Point { x:  1, y:  0, z: -1 },
+    Point { x:  1, y:  0, z:  0 },
+    Point { x:  1, y:  0, z:  1 },
+    Point { x:  1, y:  1, z: -1 },
+    Point { x:  1, y:  1, z:  0 },
+    Point { x:  1, y:  1, z:  1 },
+];
+
+pub const CUBE_CORNERS: [Point; 8] = [
+    Point { x: 0, y: 0, z: 0 },
+    Point { x: 1, y: 0, z: 0 },
+    Point { x: 0, y: 1, z: 0 },
+    Point { x: 1, y: 1, z: 0 },
+    Point { x: 0, y: 0, z: 1 },
+    Point { x: 1, y: 0, z: 1 },
+    Point { x: 0, y: 1, z: 1 },
+    Point { x: 1, y: 1, z: 1 },
+];

@@ -2,10 +2,7 @@
 //! map. Users may want to implement the Get* traits in multiple ways, and they can use newtypes
 //! that wrap these types to do so.
 
-use crate::{
-    prelude::*, ChunkedLatticeMap, Extent, HasIndexer, Indexer, Point, VecLatticeMap,
-    YLevelsIndexer,
-};
+use crate::{prelude::*, ChunkedLatticeMap, Extent, Point, VecLatticeMap, YLevelsIndexer};
 use serde::{Deserialize, Serialize};
 
 pub trait GetPaletteAddress {

@@ -1,4 +1,4 @@
-use crate::{prelude::*, DirectionIndex, Point};
+use crate::{normal::DirectionIndex, prelude::*, Point};
 
 use serde::{Deserialize, Serialize};
 use std::{

@@ -1,4 +1,4 @@
-use crate::{GetWorld, Point};
+use crate::{lattice_map::GetWorld, Point};
 
 pub struct FnLatticeMap<F> {
     f: F,

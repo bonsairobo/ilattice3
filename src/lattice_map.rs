@@ -1,6 +1,6 @@
 //! A bunch of common traits for the various kinds of lattice maps.
 
-use crate::{extent::ExtentIterator, GetExtent, HasIndexer, Indexer, Point};
+use crate::{extent::ExtentIterator, prelude::*, Point};
 
 use std::borrow::Borrow;
 

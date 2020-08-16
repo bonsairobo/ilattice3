@@ -1,4 +1,4 @@
-use crate::{copy_extent, Extent, Indexer, Point, VecLatticeMap, YLevelsIndexer};
+use crate::{copy_extent, prelude::*, Extent, Point, VecLatticeMap, YLevelsIndexer};
 
 use std::marker::PhantomData;
 

@@ -1,6 +1,4 @@
-use crate::{
-    Extent, GetExtent, GetLinearRef, HasIndexer, Indexer, IsEmpty, Point, FACE_ADJACENT_OFFSETS,
-};
+use crate::{point::FACE_ADJACENT_OFFSETS, prelude::*};
 
 /// Find all points inside of `extent` that are path-connected to `seed` and satisfy `predicate`.
 /// `extent` and `seed` should be given in the world coordinates of `voxels`. Returns points in
@@ -128,9 +126,7 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{
-        fill_extent, prelude::*, test_util::assert_elements_eq, VecLatticeMap, YLevelsIndexer,
-    };
+    use crate::{fill_extent, test_util::assert_elements_eq, VecLatticeMap, YLevelsIndexer};
 
     #[derive(Clone)]
     struct Voxel(bool);

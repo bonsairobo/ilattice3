@@ -1,4 +1,4 @@
-use crate::{copy_extent, prelude::*, Extent, HasIndexer, Indexer, Transform, YLevelsIndexer};
+use crate::{copy_extent, prelude::*, Extent, Transform, YLevelsIndexer};
 
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;

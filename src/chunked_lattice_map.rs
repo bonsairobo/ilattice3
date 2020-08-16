@@ -1,6 +1,6 @@
 use crate::{
-    bounding_extent, copy_extent, lattice_map::LatticeMapKeyValIterator, prelude::*, Extent,
-    Indexer, Point, VecLatticeMap, YLevelsIndexer,
+    bounding_extent, copy_extent, lattice_map::LatticeMapKeyValIterator, prelude::*, Extent, Point,
+    VecLatticeMap, YLevelsIndexer,
 };
 
 use serde::{Deserialize, Serialize};
