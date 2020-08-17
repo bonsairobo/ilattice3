@@ -25,7 +25,7 @@ mod image;
 #[cfg(test)]
 mod test_util;
 
-pub use chunked_lattice_map::ChunkedLatticeMap;
+pub use chunked_lattice_map::{Chunk, ChunkedLatticeMap};
 pub use extent::{
     bounding_extent, copy_extent, copy_extent_to_position, fill_extent, map_extent, Extent,
 };

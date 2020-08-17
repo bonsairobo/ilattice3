@@ -82,19 +82,19 @@ impl<'a, T, P, I> GetExtent for ChunkVoxelsRefMut<'a, T, P, I> {
 
 /// A `ChunkedLatticeMap` that stores voxel data efficiently using palette compression.
 #[derive(Deserialize, Serialize)]
-pub struct ChunkedPaletteLatticeMap<T, P, I = YLevelsIndexer> {
+pub struct ChunkedPaletteLatticeMap<T, P, M = (), I = YLevelsIndexer> {
     /// The palette of voxels that can be used in the map.
     pub palette: Vec<T>,
     /// Which voxels are used at specific points of the lattice.
-    pub map: ChunkedLatticeMap<P, I>,
+    pub map: ChunkedLatticeMap<P, M, I>,
 }
 
-impl<T, P, I> ChunkedPaletteLatticeMap<T, P, I> {
+impl<T, P, M, I> ChunkedPaletteLatticeMap<T, P, M, I> {
     pub fn get_chunk(&self, chunk_key: &Point) -> Option<ChunkVoxelsRef<T, P, I>> {
         let ChunkedPaletteLatticeMap { map, palette } = self;
 
-        map.get_chunk(chunk_key).map(|chunk_map| ChunkVoxelsRef {
-            map: chunk_map,
+        map.get_chunk(chunk_key).map(|chunk| ChunkVoxelsRef {
+            map: &chunk.map,
             palette,
         })
     }
@@ -103,18 +103,18 @@ impl<T, P, I> ChunkedPaletteLatticeMap<T, P, I> {
         let ChunkedPaletteLatticeMap { map, palette } = self;
 
         map.get_mut_chunk(chunk_key)
-            .map(move |chunk_map| ChunkVoxelsRefMut {
-                map: chunk_map,
+            .map(move |chunk| ChunkVoxelsRefMut {
+                map: &mut chunk.map,
                 palette,
             })
     }
 
     pub fn iter_chunks_ref(&self) -> impl Iterator<Item = (&Point, ChunkVoxelsRef<T, P, I>)> {
-        self.map.iter_chunks().map(move |(chunk_key, chunk_map)| {
+        self.map.iter_chunks().map(move |(chunk_key, chunk)| {
             (
                 chunk_key,
                 ChunkVoxelsRef {
-                    map: chunk_map,
+                    map: &chunk.map,
                     palette: &self.palette,
                 },
             )
@@ -122,7 +122,7 @@ impl<T, P, I> ChunkedPaletteLatticeMap<T, P, I> {
     }
 }
 
-impl<T, P, I> ChunkedPaletteLatticeMap<T, P, I>
+impl<T, P, M, I> ChunkedPaletteLatticeMap<T, P, M, I>
 where
     P: Clone + Default,
     I: Indexer,
@@ -218,9 +218,10 @@ where
     }
 }
 
-impl<T, P> MaybeGetWorldRef for ChunkedPaletteLatticeMap<T, P>
+impl<T, P, M, I> MaybeGetWorldRef for ChunkedPaletteLatticeMap<T, P, M, I>
 where
     P: Clone + GetPaletteAddress,
+    I: Indexer,
 {
     type Data = T;
 
@@ -231,9 +232,10 @@ where
     }
 }
 
-impl<T, P> MaybeGetWorldRefMut for ChunkedPaletteLatticeMap<T, P>
+impl<T, P, M, I> MaybeGetWorldRefMut for ChunkedPaletteLatticeMap<T, P, M, I>
 where
     P: Clone + GetPaletteAddress,
+    I: Indexer,
 {
     type Data = T;
 
