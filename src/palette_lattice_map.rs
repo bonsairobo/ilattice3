@@ -240,15 +240,22 @@ impl<'a, T, P, I> GetExtent for ChunkVoxelsRefMut<'a, T, P, I> {
     }
 }
 
-impl<'a, T, P, I> GetLocalRefMut for ChunkVoxelsRefMut<'a, T, P, I>
+impl<'a, T, P, I> HasIndexer for ChunkVoxelsRefMut<'a, T, P, I>
+where
+    I: Indexer,
+{
+    type Indexer = I;
+}
+
+impl<'a, T, P, I> GetLinearRefMut for ChunkVoxelsRefMut<'a, T, P, I>
 where
     P: Clone + GetPaletteAddress,
     I: Indexer,
 {
     type Data = T;
 
-    fn get_local_ref_mut(&mut self, p: &Point) -> &mut T {
-        let ptr = self.map.get_local(p);
+    fn get_linear_ref_mut(&mut self, i: usize) -> &mut Self::Data {
+        let ptr = self.map.get_linear(i);
 
         self.get_pointed_voxel_info_mut(&ptr)
     }
