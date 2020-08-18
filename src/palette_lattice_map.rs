@@ -9,78 +9,9 @@ pub trait GetPaletteAddress {
     fn get_palette_address(&self) -> usize;
 }
 
-/// An owned `VecLatticeMap` with a borrowed palette. The `VecLatticeMap` does not need to be a
-/// chunk.
-pub struct LatticeVoxels<'a, T, P, I = YLevelsIndexer> {
-    pub palette: &'a Vec<T>,
-    pub map: VecLatticeMap<P, I>,
-}
-
-impl<'a, T, P, I> LatticeVoxels<'a, T, P, I>
-where
-    P: GetPaletteAddress,
-{
-    pub fn get_pointed_voxel_info(&'a self, ptr: &P) -> &'a T {
-        &self.palette[ptr.get_palette_address()]
-    }
-}
-
-impl<'a, T, P, I> GetExtent for LatticeVoxels<'a, T, P, I> {
-    fn get_extent(&self) -> &Extent {
-        self.map.get_extent()
-    }
-}
-
-impl<'a, T, P, I> HasIndexer for LatticeVoxels<'a, T, P, I>
-where
-    I: Indexer,
-{
-    type Indexer = I;
-}
-
-/// A borrowed chunk and palette.
-pub struct ChunkVoxelsRef<'a, T, P, I> {
-    pub palette: &'a Vec<T>,
-    pub map: &'a VecLatticeMap<P, I>,
-}
-
-impl<'a, T, P, I> ChunkVoxelsRef<'a, T, P, I>
-where
-    P: GetPaletteAddress,
-{
-    pub fn get_pointed_voxel_info(&self, ptr: &P) -> &T {
-        &self.palette[ptr.get_palette_address()]
-    }
-}
-
-impl<'a, T, P, I> GetExtent for ChunkVoxelsRef<'a, T, P, I> {
-    fn get_extent(&self) -> &Extent {
-        self.map.get_extent()
-    }
-}
-
-/// A mutably borrowed chunk and palette.
-pub struct ChunkVoxelsRefMut<'a, T, P, I> {
-    pub palette: &'a mut Vec<T>,
-    pub map: &'a mut VecLatticeMap<P, I>,
-}
-
-impl<'a, T, P, I> ChunkVoxelsRefMut<'a, T, P, I>
-where
-    P: GetPaletteAddress,
-{
-    pub fn get_pointed_voxel_info_mut(&mut self, ptr: &P) -> &mut T {
-        &mut self.palette[ptr.get_palette_address()]
-    }
-}
-
-impl<'a, T, P, I> GetExtent for ChunkVoxelsRefMut<'a, T, P, I> {
-    fn get_extent(&self) -> &Extent {
-        self.map.get_extent()
-    }
-}
-
-/// A `ChunkedLatticeMap` that stores voxel data efficiently using palette compression.
+/// A `ChunkedLatticeMap` that stores voxel data efficiently using palette compression. The palette
+/// pointer type `P` is what's stored for each point of the lattice. That pointer must implement
+/// `GetPaletteAddress` because it is used to look up a `T` value in the palette.
 #[derive(Deserialize, Serialize)]
 pub struct ChunkedPaletteLatticeMap<T, P, M = (), I = YLevelsIndexer> {
     /// The palette of voxels that can be used in the map.
@@ -158,66 +89,6 @@ where
     }
 }
 
-impl<'a, T, P, I> GetLinear for LatticeVoxels<'a, T, P, I>
-where
-    T: Clone,
-    P: GetPaletteAddress,
-    I: Indexer,
-{
-    type Data = T;
-
-    fn get_linear(&self, i: usize) -> T {
-        self.palette[self.map.get_linear_ref(i).get_palette_address()].clone()
-    }
-}
-
-impl<'a, T, P, I> GetLinearRef for LatticeVoxels<'a, T, P, I>
-where
-    P: GetPaletteAddress,
-    I: Indexer,
-{
-    type Data = T;
-
-    fn get_linear_ref(&self, i: usize) -> &T {
-        self.get_pointed_voxel_info(self.map.get_linear_ref(i))
-    }
-}
-
-impl<'a, T, P, I> HasIndexer for ChunkVoxelsRef<'a, T, P, I>
-where
-    I: Indexer,
-{
-    type Indexer = I;
-}
-
-impl<'a, T, P, I> GetLinearRef for ChunkVoxelsRef<'a, T, P, I>
-where
-    P: Clone + GetPaletteAddress,
-    I: Indexer,
-{
-    type Data = T;
-
-    fn get_linear_ref(&self, i: usize) -> &Self::Data {
-        let ptr = self.map.get_linear(i);
-
-        self.get_pointed_voxel_info(&ptr)
-    }
-}
-
-impl<'a, T, P, I> GetLocalRefMut for ChunkVoxelsRefMut<'a, T, P, I>
-where
-    P: Clone + GetPaletteAddress,
-    I: Indexer,
-{
-    type Data = T;
-
-    fn get_local_ref_mut(&mut self, p: &Point) -> &mut T {
-        let ptr = self.map.get_local(p);
-
-        self.get_pointed_voxel_info_mut(&ptr)
-    }
-}
-
 impl<T, P, M, I> MaybeGetWorldRef for ChunkedPaletteLatticeMap<T, P, M, I>
 where
     P: Clone + GetPaletteAddress,
@@ -243,5 +114,136 @@ where
         self.map
             .maybe_get_world(p)
             .map(move |ptr| &mut self.palette[ptr.get_palette_address()])
+    }
+}
+
+/// An owned `VecLatticeMap` with a borrowed palette. The `VecLatticeMap` does not need to be a
+/// chunk.
+pub struct LatticeVoxels<'a, T, P, I = YLevelsIndexer> {
+    pub palette: &'a Vec<T>,
+    pub map: VecLatticeMap<P, I>,
+}
+
+impl<'a, T, P, I> LatticeVoxels<'a, T, P, I>
+where
+    P: GetPaletteAddress,
+{
+    pub fn get_pointed_voxel_info(&'a self, ptr: &P) -> &'a T {
+        &self.palette[ptr.get_palette_address()]
+    }
+}
+
+impl<'a, T, P, I> GetExtent for LatticeVoxels<'a, T, P, I> {
+    fn get_extent(&self) -> &Extent {
+        self.map.get_extent()
+    }
+}
+
+impl<'a, T, P, I> HasIndexer for LatticeVoxels<'a, T, P, I>
+where
+    I: Indexer,
+{
+    type Indexer = I;
+}
+
+impl<'a, T, P, I> GetLinear for LatticeVoxels<'a, T, P, I>
+where
+    T: Clone,
+    P: GetPaletteAddress,
+    I: Indexer,
+{
+    type Data = T;
+
+    fn get_linear(&self, i: usize) -> T {
+        self.palette[self.map.get_linear_ref(i).get_palette_address()].clone()
+    }
+}
+
+impl<'a, T, P, I> GetLinearRef for LatticeVoxels<'a, T, P, I>
+where
+    P: GetPaletteAddress,
+    I: Indexer,
+{
+    type Data = T;
+
+    fn get_linear_ref(&self, i: usize) -> &T {
+        self.get_pointed_voxel_info(self.map.get_linear_ref(i))
+    }
+}
+
+/// A borrowed chunk and palette.
+pub struct ChunkVoxelsRef<'a, T, P, I> {
+    pub palette: &'a Vec<T>,
+    pub map: &'a VecLatticeMap<P, I>,
+}
+
+impl<'a, T, P, I> ChunkVoxelsRef<'a, T, P, I>
+where
+    P: GetPaletteAddress,
+{
+    pub fn get_pointed_voxel_info(&self, ptr: &P) -> &T {
+        &self.palette[ptr.get_palette_address()]
+    }
+}
+
+impl<'a, T, P, I> GetExtent for ChunkVoxelsRef<'a, T, P, I> {
+    fn get_extent(&self) -> &Extent {
+        self.map.get_extent()
+    }
+}
+
+impl<'a, T, P, I> HasIndexer for ChunkVoxelsRef<'a, T, P, I>
+where
+    I: Indexer,
+{
+    type Indexer = I;
+}
+
+impl<'a, T, P, I> GetLinearRef for ChunkVoxelsRef<'a, T, P, I>
+where
+    P: Clone + GetPaletteAddress,
+    I: Indexer,
+{
+    type Data = T;
+
+    fn get_linear_ref(&self, i: usize) -> &Self::Data {
+        let ptr = self.map.get_linear(i);
+
+        self.get_pointed_voxel_info(&ptr)
+    }
+}
+
+/// A mutably borrowed chunk and palette.
+pub struct ChunkVoxelsRefMut<'a, T, P, I> {
+    pub palette: &'a mut Vec<T>,
+    pub map: &'a mut VecLatticeMap<P, I>,
+}
+
+impl<'a, T, P, I> ChunkVoxelsRefMut<'a, T, P, I>
+where
+    P: GetPaletteAddress,
+{
+    pub fn get_pointed_voxel_info_mut(&mut self, ptr: &P) -> &mut T {
+        &mut self.palette[ptr.get_palette_address()]
+    }
+}
+
+impl<'a, T, P, I> GetExtent for ChunkVoxelsRefMut<'a, T, P, I> {
+    fn get_extent(&self) -> &Extent {
+        self.map.get_extent()
+    }
+}
+
+impl<'a, T, P, I> GetLocalRefMut for ChunkVoxelsRefMut<'a, T, P, I>
+where
+    P: Clone + GetPaletteAddress,
+    I: Indexer,
+{
+    type Data = T;
+
+    fn get_local_ref_mut(&mut self, p: &Point) -> &mut T {
+        let ptr = self.map.get_local(p);
+
+        self.get_pointed_voxel_info_mut(&ptr)
     }
 }

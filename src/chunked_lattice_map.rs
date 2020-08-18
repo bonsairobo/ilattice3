@@ -18,7 +18,8 @@ impl<T, I> Chunk<T, (), I> {
     }
 }
 
-/// Stores a partial function on ZxZxZ in same-sized chunks using a hash map.
+/// Stores a partial function on ZxZxZ in same-sized chunks using a hash map. Optionally, you can
+/// also store some metadata of type `M` for each chunk.
 #[derive(Clone, Deserialize, Serialize)]
 pub struct ChunkedLatticeMap<T, M = (), I = YLevelsIndexer> {
     pub chunk_size: Point,
