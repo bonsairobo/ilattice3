@@ -6,6 +6,8 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use std::collections::{hash_map, HashMap};
 
+/// One piece of the `ChunkedLatticeMap`. Contains both some generic metadata and the data for each
+/// point in the chunk extent.
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Chunk<T, M = (), I = YLevelsIndexer> {
     pub metadata: M,
@@ -13,10 +15,13 @@ pub struct Chunk<T, M = (), I = YLevelsIndexer> {
 }
 
 impl<T, I> Chunk<T, (), I> {
+    /// Constructs a chunk without metadata.
     pub fn with_map(map: VecLatticeMap<T, I>) -> Self {
         Chunk { metadata: (), map }
     }
 }
+
+// TODO: make a chunk "entry" API for this map
 
 /// Stores a partial function on ZxZxZ in same-sized chunks using a hash map. Optionally, you can
 /// also store some metadata of type `M` for each chunk.
@@ -27,6 +32,7 @@ pub struct ChunkedLatticeMap<T, M = (), I = YLevelsIndexer> {
 }
 
 impl<T, M, I> ChunkedLatticeMap<T, M, I> {
+    /// Creates an empty map.
     pub fn new(chunk_size: Point) -> Self {
         assert!(chunk_size > [0, 0, 0].into());
 
@@ -36,14 +42,19 @@ impl<T, M, I> ChunkedLatticeMap<T, M, I> {
         }
     }
 
+    /// Inserts or overwrites the chunk at `key`. Returns the previous chunk.
     pub fn insert_chunk(&mut self, key: Point, chunk: Chunk<T, M, I>) -> Option<Chunk<T, M, I>> {
         self.map.insert(key, chunk)
     }
 
+    /// Returns the key of the chunk that contains `point`.
     pub fn chunk_key(&self, point: &Point) -> Point {
         *point / self.chunk_size
     }
 
+    /// Returns the extent whose points are exactly the set of chunks (keys) that contain any of the
+    /// points in `extent`. For example, if the chunk size is 2x2x2, then the extent from (0, 0, 0)
+    /// to (8, 8, 8) would return the chunk key extent from (0, 0, 0) to (4, 4, 4).
     fn key_extent(&self, extent: &Extent) -> Extent {
         let key_min = self.chunk_key(&extent.get_minimum());
         let key_max = self.chunk_key(&extent.get_world_max());
@@ -51,6 +62,7 @@ impl<T, M, I> ChunkedLatticeMap<T, M, I> {
         Extent::from_min_and_world_max(key_min, key_max)
     }
 
+    /// Returns the extent of the chunk at `key`.
     pub fn extent_for_chunk_key(&self, key: &Point) -> Extent {
         let min = *key * self.chunk_size;
         let local_sup = self.chunk_size;
@@ -58,28 +70,34 @@ impl<T, M, I> ChunkedLatticeMap<T, M, I> {
         Extent::from_min_and_local_supremum(min, local_sup)
     }
 
+    /// Returns an iterator over (chunk key, chunk) pairs.
     pub fn iter_chunks(&self) -> impl Iterator<Item = (&Point, &Chunk<T, M, I>)> {
         self.map.iter()
     }
 
+    /// Returns an iterator over (chunk key, mutable chunk) pairs.
     pub fn iter_chunks_mut(&mut self) -> impl Iterator<Item = (&Point, &mut Chunk<T, M, I>)> {
         self.map.iter_mut()
     }
 
+    /// Returns the chunk at `key` if it exists.
     pub fn get_chunk(&self, key: &Point) -> Option<&Chunk<T, M, I>> {
         self.map.get(key)
     }
 
+    /// Returns the mutable chunk at `key` if it exists.
     pub fn get_mut_chunk(&mut self, key: &Point) -> Option<&mut Chunk<T, M, I>> {
         self.map.get_mut(key)
     }
 
+    /// Returns the chunk containing `point` if it exists.
     pub fn get_chunk_containing_point(&self, point: &Point) -> Option<(Point, &Chunk<T, M, I>)> {
         let chunk_key = self.chunk_key(point);
 
         self.get_chunk(&chunk_key).map(|c| (chunk_key, c))
     }
 
+    /// Returns the mutable chunk containing `point` if it exists.
     pub fn get_mut_chunk_containing_point(
         &mut self,
         point: &Point,
@@ -116,6 +134,7 @@ impl<T, M, I> ChunkedLatticeMap<T, M, I> {
         }
     }
 
+    /// Returns the smallest extent that bounds all points in this map.
     pub fn bounding_extent(&self) -> Extent {
         assert!(!self.map.is_empty());
         let extrema_iter = self
@@ -187,7 +206,7 @@ where
     I: Indexer,
 {
     /// Get mutable data for point `p`. If `p` does not exist, calls `fill_empty_chunk` to fill
-    /// that entry.
+    /// that entry first.
     pub fn get_mut_or_create(
         &mut self,
         p: &Point,
@@ -205,8 +224,8 @@ where
         )
     }
 
-    /// `fill_default` will be the value of points outside the given extent that nonetheless must be
-    /// filled in each non-sparse chunk.
+    /// Fills `extent` with value `T`. If `extent` overlaps a chunk that doesn't exist yet, then
+    /// `fill_empty_chunk` will fill the chunk first.
     pub fn fill_extent(
         &mut self,
         extent: &Extent,
@@ -217,6 +236,8 @@ where
         self.copy_map_into_chunks(&fill_lat, fill_empty_chunk);
     }
 
+    /// Copies the values at all points in `map` into the same points of `self`. For any points
+    /// inside of chunks that don't exist yet, first fill the chunk with `fill_empty_chunk`.
     pub fn copy_map_into_chunks<V>(
         &mut self,
         map: &V,
@@ -239,10 +260,13 @@ where
     }
 }
 
-impl<T: Clone + Default, M, I> ChunkedLatticeMap<T, M, I>
+impl<T, M, I> ChunkedLatticeMap<T, M, I>
 where
+    T: Clone + Default,
     I: Indexer,
 {
+    /// Copies all points from `extent` into a new dense map. Any points in `self` that have values
+    /// will take on the value `T::default()`.
     pub fn copy_extent_into_new_map(&self, extent: Extent) -> VecLatticeMap<T, I> {
         let mut new_map = VecLatticeMap::fill(extent, T::default());
         for (p, val) in self.iter_point_values(extent) {
@@ -252,10 +276,15 @@ where
         new_map
     }
 
+    /// Copies all points from `self` into a new dense map. Any points in `self` that have values
+    /// will take on the value `T::default()`.
     pub fn copy_into_new_map(&self) -> VecLatticeMap<T, I> {
         self.copy_extent_into_new_map(self.bounding_extent())
     }
 
+    /// Copies the entire chunk and values at adjacent points into a new dense map. For example,
+    /// if the key for chunk with extent from (2, 2, 2) to (4, 4, 4) is chose, then the extent from
+    /// (1, 1, 1) to (5, 5, 5) will be copied.
     pub fn get_chunk_and_boundary(&self, chunk_key: &Point) -> VecLatticeMap<T, I> {
         let extent = self.extent_for_chunk_key(chunk_key).padded(1);
 

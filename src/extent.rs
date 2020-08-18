@@ -413,7 +413,7 @@ where
 }
 
 /// Copies values of `src` at all points in `extent` to `dst`, starting at the minimum
-/// `dsp_position`.
+/// `dst_position`.
 pub fn copy_extent_to_position<T, R, S, D>(
     src: &S,
     dst: &mut D,
