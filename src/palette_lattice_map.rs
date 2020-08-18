@@ -21,6 +21,7 @@ pub struct ChunkedPaletteLatticeMap<T, P, M = (), I = YLevelsIndexer> {
 }
 
 impl<T, P, M, I> ChunkedPaletteLatticeMap<T, P, M, I> {
+    /// Returns a chunk reference along with a palette reference.
     pub fn get_chunk(&self, chunk_key: &Point) -> Option<ChunkVoxelsRef<T, P, I>> {
         let ChunkedPaletteLatticeMap { map, palette } = self;
 
@@ -30,6 +31,7 @@ impl<T, P, M, I> ChunkedPaletteLatticeMap<T, P, M, I> {
         })
     }
 
+    /// Returns a mutable chunk reference along with a mutable palette reference.
     pub fn get_chunk_mut(&mut self, chunk_key: &Point) -> Option<ChunkVoxelsRefMut<T, P, I>> {
         let ChunkedPaletteLatticeMap { map, palette } = self;
 
@@ -40,6 +42,7 @@ impl<T, P, M, I> ChunkedPaletteLatticeMap<T, P, M, I> {
             })
     }
 
+    /// Iterate over (chunk key, chunk reference + palette reference) pairs.
     pub fn iter_chunks_ref(&self) -> impl Iterator<Item = (&Point, ChunkVoxelsRef<T, P, I>)> {
         self.map.iter_chunks().map(move |(chunk_key, chunk)| {
             (
@@ -58,6 +61,7 @@ where
     P: Clone + Default,
     I: Indexer,
 {
+    /// Like `ChunkedLatticeMap::copy_extent_into_new_map`, but also returns a palette reference.
     pub fn copy_extent_into_new_map(&self, extent: Extent) -> LatticeVoxels<T, P, I> {
         let ChunkedPaletteLatticeMap { map, palette } = self;
 
@@ -69,6 +73,7 @@ where
         }
     }
 
+    /// Like `ChunkedLatticeMap::get_chunk_and_boundary`, but also returns a palette reference.
     pub fn get_chunk_and_boundary(&self, chunk_key: &Point) -> LatticeVoxels<T, P, I> {
         let ChunkedPaletteLatticeMap { map, palette } = self;
 
@@ -80,6 +85,7 @@ where
         }
     }
 
+    /// Iterate over (chunk key, owned lattice map + palette reference) pairs.
     pub fn iter_chunks_with_boundary(
         &self,
     ) -> impl Iterator<Item = (&Point, LatticeVoxels<T, P, I>)> {
