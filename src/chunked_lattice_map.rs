@@ -262,6 +262,29 @@ where
 
 impl<T, M, I> ChunkedLatticeMap<T, M, I>
 where
+    T: Clone,
+    M: Clone,
+    I: Indexer,
+{
+    /// Fills `extent` with value `T`. If `extent` overlaps a chunk that doesn't exist yet, then
+    /// `fill_empty_chunk` will fill the chunk first.
+    pub fn fill_extent_or_default(
+        &mut self,
+        extent: &Extent,
+        val: T,
+        default_metadata: M,
+        default_voxel: T,
+    ) {
+        let fill_lat = VecLatticeMap::<_, YLevelsIndexer>::fill(*extent, val);
+        self.copy_map_into_chunks(&fill_lat, |_, extent| Chunk {
+            metadata: default_metadata.clone(),
+            map: VecLatticeMap::fill(*extent, default_voxel.clone()),
+        });
+    }
+}
+
+impl<T, M, I> ChunkedLatticeMap<T, M, I>
+where
     T: Clone + Default,
     I: Indexer,
 {
