@@ -1,5 +1,57 @@
 use crate::{point::FACE_ADJACENT_OFFSETS, prelude::*};
 
+use crate::search::greedy_best_first;
+
+/// Uses the given heuristic to do greedy best-first search from `start` to `finish`. All points on
+/// the path must satisfy `predicate`.
+pub fn find_path_through_voxels<C>(
+    start: &Point,
+    finish: &Point,
+    predicate: impl Fn(&Point) -> bool,
+    heuristic: impl Fn(&Point) -> C,
+    max_iterations: usize,
+) -> (bool, Vec<Point>)
+where
+    C: Copy + Ord,
+{
+    if !predicate(start) {
+        return (false, vec![]);
+    }
+
+    // All adjacent points satisfying predicate.
+    let successors = |p: &Point| {
+        FACE_ADJACENT_OFFSETS
+            .iter()
+            .map(|offset| *p + *offset)
+            .filter_map(|s| if predicate(&s) { Some(s) } else { None })
+            .collect::<Vec<Point>>()
+    };
+
+    let success = |p: &Point| *p == *finish;
+
+    let (reached_finish, path) =
+        greedy_best_first(start, successors, heuristic, success, max_iterations);
+
+    (reached_finish, path)
+}
+
+/// Uses L1 distance as a heuristic to do greedy best-first search from `start` to `finish`. All
+/// points on the path must satisfy `predicate`.
+pub fn find_path_through_voxels_with_l1_heuristic(
+    start: &Point,
+    finish: &Point,
+    predicate: impl Fn(&Point) -> bool,
+    max_iterations: usize,
+) -> (bool, Vec<Point>) {
+    let heuristic = |p: &Point| {
+        let diff = *finish - *p;
+
+        diff.x.abs() + diff.y.abs() + diff.z.abs()
+    };
+
+    find_path_through_voxels(start, finish, predicate, heuristic, max_iterations)
+}
+
 /// Find all points inside of `extent` that are path-connected to `seed` and satisfy `predicate`.
 /// `extent` and `seed` should be given in the world coordinates of `voxels`. Returns points in
 /// world coordinates.

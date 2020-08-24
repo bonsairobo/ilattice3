@@ -9,6 +9,7 @@ pub mod lattice_map;
 pub mod normal;
 pub mod palette_lattice_map;
 pub mod point;
+pub mod search;
 pub mod tile;
 pub mod transform;
 pub mod vec_lattice_map;

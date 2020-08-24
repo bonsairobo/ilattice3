@@ -13,11 +13,12 @@ vox = ["dot_vox"]
 img = ["image"]
 
 [dependencies]
-enum-primitive-derive = "*"
-itertools = "*"
-num = "*"
-num-traits = "*"
-serde = { version = "*", features = ["derive"] }
+enum-primitive-derive = "0.2"
+indexmap = "1.5"
+itertools = "0.9"
+num = "0.3"
+num-traits = "0.2"
+serde = { version = "1.0", features = ["derive"] }
 
-dot_vox = { version = "*", optional = true }
-image = { version = "*", optional = true }
+dot_vox = { version = "4.1", optional = true }
+image = { version = "0.23", optional = true }
