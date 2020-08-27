@@ -63,12 +63,8 @@ impl<T, M, I> ChunkedLatticeMap<T, M, I> {
         Extent::from_min_and_world_max(key_min, key_max)
     }
 
-    /// Returns the extent of the chunk at `key`.
     pub fn extent_for_chunk_key(&self, key: &Point) -> Extent {
-        let min = *key * self.chunk_size;
-        let local_sup = self.chunk_size;
-
-        Extent::from_min_and_local_supremum(min, local_sup)
+        extent_for_chunk_key(&self.chunk_size, key)
     }
 
     /// Returns an iterator over (chunk key, chunk) pairs.
@@ -152,6 +148,14 @@ impl<T, M, I> ChunkedLatticeMap<T, M, I> {
     }
 }
 
+/// Returns the extent of the chunk at `key`.
+pub fn extent_for_chunk_key(chunk_size: &Point, key: &Point) -> Extent {
+    let min = *key * *chunk_size;
+    let local_sup = *chunk_size;
+
+    Extent::from_min_and_local_supremum(min, local_sup)
+}
+
 impl<T, M, I> MaybeGetWorld for ChunkedLatticeMap<T, M, I>
 where
     T: Clone,
@@ -211,15 +215,16 @@ where
     pub fn get_mut_or_create(
         &mut self,
         p: &Point,
-        fill_empty_chunk: impl Fn() -> Chunk<T, M, I>,
+        fill_empty_chunk: impl Fn(&Point, &Extent) -> Chunk<T, M, I>,
     ) -> (Point, &mut T) {
         let key = self.chunk_key(p);
+        let chunk_size = self.chunk_size;
 
         (
             key,
             self.map
                 .entry(key)
-                .or_insert_with(fill_empty_chunk)
+                .or_insert_with(|| fill_empty_chunk(&key, &extent_for_chunk_key(&chunk_size, &key)))
                 .map
                 .get_world_ref_mut(p),
         )
@@ -268,7 +273,7 @@ where
     I: Indexer,
 {
     /// Fills `extent` with value `T`. If `extent` overlaps a chunk that doesn't exist yet, then
-    /// `fill_empty_chunk` will fill the chunk first.
+    /// `default_voxel` will fill the chunk first.
     pub fn fill_extent_or_default(
         &mut self,
         extent: &Extent,
@@ -281,6 +286,20 @@ where
             metadata: default_metadata.clone(),
             map: VecLatticeMap::fill(*extent, default_voxel.clone()),
         });
+    }
+
+    /// Sets point `p` to value `T`. If `p` is in a chunk that doesn't exist yet, then
+    /// `default_voxel` will fill the chunk first.
+    pub fn get_mut_or_default(
+        &mut self,
+        p: &Point,
+        default_metadata: M,
+        default_voxel: T,
+    ) -> (Point, &mut T) {
+        self.get_mut_or_create(p, |_, extent| Chunk {
+            metadata: default_metadata.clone(),
+            map: VecLatticeMap::fill(*extent, default_voxel.clone()),
+        })
     }
 }
 
