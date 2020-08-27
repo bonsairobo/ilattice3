@@ -13,6 +13,7 @@ vox = ["dot_vox"]
 img = ["image"]
 
 [dependencies]
+fnv = "1.0"
 enum-primitive-derive = "0.2"
 indexmap = "1.5"
 itertools = "0.9"

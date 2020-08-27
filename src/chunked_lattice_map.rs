@@ -3,8 +3,9 @@ use crate::{
     VecLatticeMap, YLevelsIndexer,
 };
 
+use fnv::FnvHashMap;
 use serde::{Deserialize, Serialize};
-use std::collections::{hash_map, HashMap};
+use std::collections::hash_map;
 
 /// One piece of the `ChunkedLatticeMap`. Contains both some generic metadata and the data for each
 /// point in the chunk extent.
@@ -28,7 +29,7 @@ impl<T, I> Chunk<T, (), I> {
 #[derive(Clone, Deserialize, Serialize)]
 pub struct ChunkedLatticeMap<T, M = (), I = YLevelsIndexer> {
     pub chunk_size: Point,
-    pub map: HashMap<Point, Chunk<T, M, I>>,
+    pub map: FnvHashMap<Point, Chunk<T, M, I>>,
 }
 
 impl<T, M, I> ChunkedLatticeMap<T, M, I> {
@@ -38,7 +39,7 @@ impl<T, M, I> ChunkedLatticeMap<T, M, I> {
 
         Self {
             chunk_size,
-            map: HashMap::new(),
+            map: FnvHashMap::default(),
         }
     }
 
