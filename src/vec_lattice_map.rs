@@ -494,10 +494,11 @@ mod compression_tests {
     use std::io::Write;
 
     const LZ4_LEVEL: u32 = 1;
+    const MAP_SIZE: i32 = 128;
 
     #[test]
     fn portable_compress_and_decompress_benchmark() {
-        let extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), [32; 3].into());
+        let extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), [MAP_SIZE; 3].into());
         let map = VecLatticeMap::<_, YLevelsIndexer>::fill(extent, 0);
 
         let start = std::time::Instant::now();
@@ -525,7 +526,7 @@ mod compression_tests {
 
     #[test]
     fn fast_compress_and_decompress_benchmark() {
-        let extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), [32; 3].into());
+        let extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), [MAP_SIZE; 3].into());
         let map = VecLatticeMap::<_, YLevelsIndexer>::fill(extent, 0);
 
         let start = std::time::Instant::now();

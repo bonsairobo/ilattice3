@@ -31,6 +31,3 @@ Other miscellaneous features:
 There are also companion modules:
 * [ilattice3-mesh](https://github.com/bonsairobo/ilattice3-mesh): various meshing algorithms for voxel data
 * [ilattice3-wfc](https://github.com/bonsairobo/ilattice3-wfc): the Wave Function Collapse algorithm for 2D and 3D lattices
-
-TODO:
-* `ChunkedLatticeMap` with variable level of detail per chunk
