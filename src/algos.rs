@@ -23,7 +23,7 @@ where
         FACE_ADJACENT_OFFSETS
             .iter()
             .map(|offset| *p + *offset)
-            .filter_map(|s| if predicate(&s) { Some(s) } else { None })
+            .filter(&predicate)
             .collect::<Vec<Point>>()
     };
 
@@ -70,12 +70,11 @@ where
     let local_seed = seed - voxels_min;
 
     let local_filled = flood_fill_local(voxels, local_seed, &local_extent, predicate);
-    let world_filled = local_filled
+
+    local_filled
         .into_iter()
         .map(|p| p + extent.get_minimum())
-        .collect();
-
-    world_filled
+        .collect()
 }
 
 // PERF: Could be faster with scanlines.

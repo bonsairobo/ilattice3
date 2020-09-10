@@ -195,6 +195,121 @@ impl<T: Clone, I: Indexer> VecLatticeMap<T, I> {
     }
 }
 
+#[cfg(feature = "compress")]
+impl<T, I> VecLatticeMap<T, I>
+where
+    T: Serialize,
+{
+    /// Compress the map in-memory using the LZ4 algorithm. The result should be safe to decompress
+    /// on another platform.
+    ///
+    /// TODO: maybe this should use a different algorithm with better compression ratio, if it's
+    /// intended for long-term storage
+    pub fn compress_portable(&self, level: u32) -> PortableCompressedVecLatticeMap<T, I> {
+        let serialized_bytes = bincode::serialize(self).unwrap();
+
+        let mut compressed_bytes = Vec::new();
+        let mut encoder = lz4::EncoderBuilder::new()
+            .level(level)
+            .build(&mut compressed_bytes)
+            .unwrap();
+
+        std::io::copy(&mut std::io::Cursor::new(serialized_bytes), &mut encoder).unwrap();
+        let (_output, _result) = encoder.finish();
+
+        PortableCompressedVecLatticeMap {
+            compressed_bytes,
+            marker: Default::default(),
+        }
+    }
+}
+
+#[cfg(feature = "compress")]
+impl<T, I> VecLatticeMap<T, I> {
+    /// Compress the map in-memory using the LZ4 algorithm.
+    ///
+    /// WARNING: For performance, this reinterprets the inner vector as a byte slice without
+    /// accounting for endianness. This is not compatible across platforms.
+    pub fn compress_fast(&self, level: u32) -> FastCompressedVecLatticeMap<T, I> {
+        let mut compressed_bytes = Vec::new();
+        let values_slice: &[u8] = unsafe {
+            std::slice::from_raw_parts(
+                self.values.as_ptr() as *const u8,
+                self.values.len() * std::mem::size_of::<T>(),
+            )
+        };
+        let mut encoder = lz4::EncoderBuilder::new()
+            .level(level)
+            .build(&mut compressed_bytes)
+            .unwrap();
+
+        std::io::copy(&mut std::io::Cursor::new(values_slice), &mut encoder).unwrap();
+        let (_output, _result) = encoder.finish();
+
+        FastCompressedVecLatticeMap {
+            extent: self.extent,
+            compressed_bytes,
+            marker: Default::default(),
+        }
+    }
+}
+
+/// A compressed `VecLatticeMap` that can be stored and decompressed safely on any platform.
+#[cfg(feature = "compress")]
+pub struct PortableCompressedVecLatticeMap<T, I> {
+    compressed_bytes: Vec<u8>,
+    marker: std::marker::PhantomData<(T, I)>,
+}
+
+#[cfg(feature = "compress")]
+impl<T, I> PortableCompressedVecLatticeMap<T, I>
+where
+    T: serde::de::DeserializeOwned,
+{
+    /// Decompress the map in-memory using the LZ4 algorithm.
+    pub fn decompress(&self) -> VecLatticeMap<T, I> {
+        let mut decoder = lz4::Decoder::new(self.compressed_bytes.as_slice()).unwrap();
+        let mut decompressed_bytes = Vec::new();
+        std::io::copy(&mut decoder, &mut decompressed_bytes).unwrap();
+
+        bincode::deserialize(decompressed_bytes.as_slice()).unwrap()
+    }
+}
+
+#[cfg(feature = "compress")]
+pub struct FastCompressedVecLatticeMap<T, I> {
+    compressed_bytes: Vec<u8>,
+    extent: Extent,
+    marker: std::marker::PhantomData<(T, I)>,
+}
+
+#[cfg(feature = "compress")]
+impl<T, I> FastCompressedVecLatticeMap<T, I>
+where
+    T: serde::de::DeserializeOwned,
+    I: Indexer,
+{
+    /// Decompress the map in-memory using the LZ4 algorithm.
+    ///
+    /// WARNING: This will not work if this map was compressed on a different platform!
+    pub fn decompress(&self) -> VecLatticeMap<T, I> {
+        let volume = self.extent.volume();
+
+        let mut decoder = lz4::Decoder::new(self.compressed_bytes.as_slice()).unwrap();
+        let mut decompressed_values: Vec<T> = Vec::with_capacity(volume);
+        unsafe { decompressed_values.set_len(volume) };
+        let mut decompressed_slice = unsafe {
+            std::slice::from_raw_parts_mut(
+                decompressed_values.as_mut_ptr() as *mut u8,
+                volume * std::mem::size_of::<T>(),
+            )
+        };
+        std::io::copy(&mut decoder, &mut decompressed_slice).unwrap();
+
+        VecLatticeMap::new(self.extent, decompressed_values)
+    }
+}
+
 // ████████╗███████╗███████╗████████╗███████╗
 // ╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝██╔════╝
 //    ██║   █████╗  ███████╗   ██║   ███████╗
@@ -368,5 +483,77 @@ mod tests {
             assert_eq!(p, [0, 0, 0].into());
             assert_eq!(*v, 0);
         }
+    }
+}
+
+#[cfg(feature = "compress")]
+#[cfg(test)]
+mod compression_tests {
+    use super::*;
+
+    use std::io::Write;
+
+    const LZ4_LEVEL: u32 = 1;
+
+    #[test]
+    fn portable_compress_and_decompress_benchmark() {
+        let extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), [32; 3].into());
+        let map = VecLatticeMap::<_, YLevelsIndexer>::fill(extent, 0);
+
+        let start = std::time::Instant::now();
+        let compressed_map = map.compress_portable(LZ4_LEVEL);
+        let elapsed_micros = start.elapsed().as_micros();
+        std::io::stdout()
+            .write(format!("portable compressing map took {} micros\n", elapsed_micros).as_bytes())
+            .unwrap();
+
+        let start = std::time::Instant::now();
+        let decompressed_map = compressed_map.decompress();
+        let elapsed_micros = start.elapsed().as_micros();
+        std::io::stdout()
+            .write(
+                format!(
+                    "portable decompressing map took {} micros\n",
+                    elapsed_micros
+                )
+                .as_bytes(),
+            )
+            .unwrap();
+
+        assert_eq!(map, decompressed_map);
+    }
+
+    #[test]
+    fn fast_compress_and_decompress_benchmark() {
+        let extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), [32; 3].into());
+        let map = VecLatticeMap::<_, YLevelsIndexer>::fill(extent, 0);
+
+        let start = std::time::Instant::now();
+        let compressed_map = map.compress_fast(LZ4_LEVEL);
+        let elapsed_micros = start.elapsed().as_micros();
+        std::io::stdout()
+            .write(
+                format!(
+                    "unportable compressing map took {} micros\n",
+                    elapsed_micros
+                )
+                .as_bytes(),
+            )
+            .unwrap();
+
+        let start = std::time::Instant::now();
+        let decompressed_map = compressed_map.decompress();
+        let elapsed_micros = start.elapsed().as_micros();
+        std::io::stdout()
+            .write(
+                format!(
+                    "unportable decompressing map took {} micros\n",
+                    elapsed_micros
+                )
+                .as_bytes(),
+            )
+            .unwrap();
+
+        assert_eq!(map, decompressed_map);
     }
 }
