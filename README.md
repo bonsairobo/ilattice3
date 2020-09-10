@@ -24,6 +24,7 @@ In addition to the `FnLatticeMap` and `VecLatticeMap`, there are:
 * `ChunkedPaletteLatticeMap`: a `ChunkedLatticeMap` with an additional layer of palette compression
 
 Other miscellaneous features:
+* fast LZ4 compression of `VecLatticeMap`
 * conversion to/from VOX format
 * conversion to/from RgbaImage format
 
