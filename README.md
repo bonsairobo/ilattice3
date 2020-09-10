@@ -21,10 +21,9 @@ let sampled_sphere =
 
 In addition to the `FnLatticeMap` and `VecLatticeMap`, there are:
 * `ChunkedLatticeMap`: a sparse lattice map implemented as a hash map of `VecLatticeMap`s
-* `ChunkedPaletteLatticeMap`: a `ChunkedLatticeMap` with an additional layer of palette compression
+* `PaletteLatticeMap`: a `ChunkedLatticeMap` where data shared between voxels lives in a separate "palette" vector
 
 Other miscellaneous features:
-* fast LZ4 compression of `VecLatticeMap`
 * conversion to/from VOX format
 * conversion to/from RgbaImage format
 

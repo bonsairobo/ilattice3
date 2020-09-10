@@ -33,7 +33,7 @@ pub use extent::{
 pub use fn_lattice_map::FnLatticeMap;
 pub use indexer::{PeriodicYLevelsIndexer, YLevelsIndexer};
 pub use palette_lattice_map::{
-    ChunkVoxelsRef, ChunkVoxelsRefMut, ChunkedPaletteLatticeMap, GetPaletteAddress, LatticeVoxels,
+    ChunkVoxelsRef, ChunkVoxelsRefMut, GetPaletteAddress, LatticeVoxels, PaletteLatticeMap,
 };
 pub use point::Point;
 pub use tile::Tile;

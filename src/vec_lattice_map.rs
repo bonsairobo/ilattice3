@@ -256,6 +256,7 @@ impl<T, I> VecLatticeMap<T, I> {
 
 /// A compressed `VecLatticeMap` that can be stored and decompressed safely on any platform.
 #[cfg(feature = "compress")]
+#[derive(Clone)]
 pub struct PortableCompressedVecLatticeMap<T, I> {
     compressed_bytes: Vec<u8>,
     marker: std::marker::PhantomData<(T, I)>,
@@ -276,7 +277,10 @@ where
     }
 }
 
+/// A compressed `VecLatticeMap` that decompresses quickly, but only on the same platform where it
+/// was compressed.
 #[cfg(feature = "compress")]
+#[derive(Clone)]
 pub struct FastCompressedVecLatticeMap<T, I> {
     compressed_bytes: Vec<u8>,
     extent: Extent,

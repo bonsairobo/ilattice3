@@ -9,21 +9,21 @@ pub trait GetPaletteAddress {
     fn get_palette_address(&self) -> usize;
 }
 
-/// A `ChunkedLatticeMap` that stores voxel data efficiently using palette compression. The palette
-/// pointer type `P` is what's stored for each point of the lattice. That pointer must implement
-/// `GetPaletteAddress` because it is used to look up a `T` value in the palette.
+/// A `ChunkedLatticeMap` that stores *shared* voxel data efficiently using palette compression. The
+/// palette pointer type `P` is what's stored for each point of the lattice. That pointer must
+/// implement `GetPaletteAddress` because it is used to look up a `T` value in the palette.
 #[derive(Deserialize, Serialize)]
-pub struct ChunkedPaletteLatticeMap<T, P, M = (), I = YLevelsIndexer> {
+pub struct PaletteLatticeMap<T, P, M = (), I = YLevelsIndexer> {
     /// The palette of voxels that can be used in the map.
     pub palette: Vec<T>,
     /// Which voxels are used at specific points of the lattice.
     pub map: ChunkedLatticeMap<P, M, I>,
 }
 
-impl<T, P, M, I> ChunkedPaletteLatticeMap<T, P, M, I> {
+impl<T, P, M, I> PaletteLatticeMap<T, P, M, I> {
     /// Returns a chunk reference along with a palette reference.
     pub fn get_chunk(&self, chunk_key: &Point) -> Option<ChunkVoxelsRef<T, P, I>> {
-        let ChunkedPaletteLatticeMap { map, palette } = self;
+        let PaletteLatticeMap { map, palette } = self;
 
         map.get_chunk(chunk_key).map(|chunk| ChunkVoxelsRef {
             map: &chunk.map,
@@ -33,7 +33,7 @@ impl<T, P, M, I> ChunkedPaletteLatticeMap<T, P, M, I> {
 
     /// Returns a mutable chunk reference along with a mutable palette reference.
     pub fn get_chunk_mut(&mut self, chunk_key: &Point) -> Option<ChunkVoxelsRefMut<T, P, I>> {
-        let ChunkedPaletteLatticeMap { map, palette } = self;
+        let PaletteLatticeMap { map, palette } = self;
 
         map.get_mut_chunk(chunk_key)
             .map(move |chunk| ChunkVoxelsRefMut {
@@ -56,14 +56,14 @@ impl<T, P, M, I> ChunkedPaletteLatticeMap<T, P, M, I> {
     }
 }
 
-impl<T, P, M, I> ChunkedPaletteLatticeMap<T, P, M, I>
+impl<T, P, M, I> PaletteLatticeMap<T, P, M, I>
 where
     P: Clone + Default,
     I: Indexer,
 {
     /// Like `ChunkedLatticeMap::copy_extent_into_new_map`, but also returns a palette reference.
     pub fn copy_extent_into_new_map(&self, extent: Extent) -> LatticeVoxels<T, P, I> {
-        let ChunkedPaletteLatticeMap { map, palette } = self;
+        let PaletteLatticeMap { map, palette } = self;
 
         let voxels = map.copy_extent_into_new_map(extent);
 
@@ -75,7 +75,7 @@ where
 
     /// Like `ChunkedLatticeMap::get_chunk_and_boundary`, but also returns a palette reference.
     pub fn get_chunk_and_boundary(&self, chunk_key: &Point) -> LatticeVoxels<T, P, I> {
-        let ChunkedPaletteLatticeMap { map, palette } = self;
+        let PaletteLatticeMap { map, palette } = self;
 
         let chunk_and_boundary = map.get_chunk_and_boundary(chunk_key);
 
@@ -95,7 +95,7 @@ where
     }
 }
 
-impl<T, P, M, I> MaybeGetWorldRef for ChunkedPaletteLatticeMap<T, P, M, I>
+impl<T, P, M, I> MaybeGetWorldRef for PaletteLatticeMap<T, P, M, I>
 where
     P: Clone + GetPaletteAddress,
     I: Indexer,
@@ -109,7 +109,7 @@ where
     }
 }
 
-impl<T, P, M, I> MaybeGetWorldRefMut for ChunkedPaletteLatticeMap<T, P, M, I>
+impl<T, P, M, I> MaybeGetWorldRefMut for PaletteLatticeMap<T, P, M, I>
 where
     P: Clone + GetPaletteAddress,
     I: Indexer,
