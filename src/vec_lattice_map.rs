@@ -56,6 +56,23 @@ impl<T, I: Indexer> GetLinearRefMut for VecLatticeMap<T, I> {
 }
 
 impl<T, I: Indexer> VecLatticeMap<T, I> {
+    /// Creates a new `VecLatticeMap` with the given `values`, which are assumed to be ordered
+    /// according to a newly created `indexer: I`.
+    pub fn new(extent: Extent, values: Vec<T>) -> Self {
+        VecLatticeMap {
+            extent,
+            values,
+            indexer: Default::default(),
+        }
+    }
+
+    /// Same as `Self::new`, but with minimum at the origin, and dimensions (or supremum) `sup`.
+    pub fn new_at_origin(sup: Point, values: Vec<T>) -> Self {
+        let extent = Extent::from_min_and_world_supremum([0, 0, 0].into(), sup);
+
+        Self::new(extent, values)
+    }
+
     /// Get a linear index from the point `p` in local coordinates using the indexer of `self`.
     pub fn index_from_local_point(&self, p: &Point) -> usize {
         let local_sup = self.extent.get_local_supremum();
@@ -92,23 +109,6 @@ impl<T, I: Indexer> VecLatticeMap<T, I> {
     {
         VecLatticeMap::new(*self.get_extent(), self.values.iter().map(f).collect())
     }
-
-    /// Creates a new `VecLatticeMap` with the given `values`, which are assumed to be ordered
-    /// according to a newly created `indexer: I`.
-    pub fn new(extent: Extent, values: Vec<T>) -> Self {
-        VecLatticeMap {
-            extent,
-            values,
-            indexer: Default::default(),
-        }
-    }
-
-    /// Same as `Self::new`, but with minimum at the origin, and dimensions (or supremum) `sup`.
-    pub fn new_at_origin(sup: Point, values: Vec<T>) -> Self {
-        let extent = Extent::from_min_and_world_supremum([0, 0, 0].into(), sup);
-
-        Self::new(extent, values)
-    }
 }
 
 impl<T: Clone, I: Indexer> VecLatticeMap<T, I> {
@@ -138,7 +138,7 @@ impl<T: Clone, I: Indexer> VecLatticeMap<T, I> {
 
     /// Returns a vec of the data in `extent`, ordered linearly by `I: Indexer`. A map
     /// can be recreated from the vec using `VecLatticeMap::<T, I>::new_with_indexer`.
-    pub fn serialize_extent(&self, extent: &Extent) -> Vec<T> {
+    pub fn linearize_extent(&self, extent: &Extent) -> Vec<T> {
         let num_elements = extent.volume();
         let mut data = Vec::with_capacity(num_elements);
         unsafe {
@@ -290,7 +290,6 @@ pub struct FastCompressedVecLatticeMap<T, I> {
 #[cfg(feature = "compress")]
 impl<T, I> FastCompressedVecLatticeMap<T, I>
 where
-    T: serde::de::DeserializeOwned,
     I: Indexer,
 {
     /// Decompress the map in-memory using the LZ4 algorithm.
@@ -378,7 +377,7 @@ mod tests {
         let orig_map = map.clone();
 
         let serial_extent = Extent::from_min_and_local_supremum([0, 0, 0].into(), [2, 2, 2].into());
-        let serialized = map.serialize_extent(&serial_extent);
+        let serialized = map.linearize_extent(&serial_extent);
         let serial_map = VecLatticeMap::<_, YLevelsIndexer>::new(serial_extent, serialized);
         copy_extent(&serial_map, &mut map, &serial_extent);
 
@@ -463,7 +462,7 @@ mod tests {
             *orig_map.get_world_ref_mut(&p) = 2;
         }
 
-        let orig_serial = orig_map.serialize_extent(&orig_extent);
+        let orig_serial = orig_map.linearize_extent(&orig_extent);
 
         let matrix = [[0, 1, 0], [-1, 0, 0], [0, 0, 1]];
         let tfm = Transform { matrix };
@@ -472,7 +471,7 @@ mod tests {
         let mut prev_map = orig_map;
         for _ in 0..4 {
             let tfm_map = prev_map.apply_octahedral_transform(&tfm);
-            let tfm_serial = tfm_map.serialize_extent(&tfm_map.get_extent());
+            let tfm_serial = tfm_map.linearize_extent(&tfm_map.get_extent());
             assert_eq!(tfm_serial, orig_serial);
             prev_map = tfm_map;
         }

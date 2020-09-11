@@ -6,6 +6,7 @@ pub mod extent;
 pub mod fn_lattice_map;
 pub mod indexer;
 pub mod lattice_map;
+pub mod lru_cache;
 pub mod normal;
 pub mod palette_lattice_map;
 pub mod point;

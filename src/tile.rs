@@ -34,7 +34,7 @@ impl<C, I: Indexer> Tile<C, I> {
         extent: &Extent,
     ) -> Tile<C, I> {
         Tile::new(
-            map.serialize_extent(extent)
+            map.linearize_extent(extent)
                 .into_iter()
                 .map(|g| g.into())
                 .collect::<Vec<C>>(),
