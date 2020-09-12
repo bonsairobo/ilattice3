@@ -1,25 +1,65 @@
 use core::hash::{BuildHasher, Hash};
-use std::collections::{
-    hash_map::{self, Entry},
-    HashMap,
-};
+use std::collections::{hash_map, HashMap};
 
 /// A cache that tracks the Least Recently Used element for next eviction. Here, "used" means read
 /// or written.
 ///
-/// Eviction does not happen inline; the user must explicitly call `evict_lru` to remove the LRU
-/// element. Thus, the cache may grow unbounded unless evictions or explicit removals occur.
+/// Eviction does not happen inline; the user must explicitly call `evict_lru` to evict the LRU
+/// element. Thus the cache may grow unbounded unless evictions or explicit removals occur.
+///
+/// Note that eviction and removal are not treated the same. The cache remembers elements that have
+/// been evicted but not removed. This is useful when users need to store evicted data in a separate
+/// structure, since if they look up a key and get `Some(EntryState::Evicted)`, they know that the
+/// data exists somewhere else. If they get `None`, then they don't have to look elsewhere; the data
+/// simply doesn't exist anywhere.
 #[derive(Clone, Debug)]
 pub struct LruCache<K, V, H> {
-    store: HashMap<K, usize, H>,
+    store: HashMap<K, EntryState<usize>, H>,
     order: LruList<(K, V)>,
+    num_evicted: usize,
 }
 
-impl<K: Hash + Eq, V, H> LruCache<K, V, H> {
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum EntryState<V> {
+    Cached(V),
+    Evicted,
+}
+
+impl<V> EntryState<V> {
+    pub fn map<T>(self, f: impl FnOnce(V) -> T) -> EntryState<T> {
+        match self {
+            EntryState::Cached(v) => EntryState::Cached(f(v)),
+            EntryState::Evicted => EntryState::Evicted,
+        }
+    }
+
+    pub fn some_if_cached(self) -> Option<V> {
+        match self {
+            EntryState::Cached(v) => Some(v),
+            EntryState::Evicted => None,
+        }
+    }
+}
+
+impl<K, V, H> Default for LruCache<K, V, H>
+where
+    H: Default,
+    K: Hash + Eq,
+{
+    fn default() -> Self {
+        Self::with_hasher(Default::default())
+    }
+}
+
+impl<K, V, H> LruCache<K, V, H>
+where
+    K: Hash + Eq,
+{
     pub fn with_hasher(hasher_builder: H) -> LruCache<K, V, H> {
         LruCache {
             store: HashMap::with_hasher(hasher_builder),
-            order: LruList::<(K, V)>::new(),
+            order: LruList::new(),
+            num_evicted: 0,
         }
     }
 }
@@ -29,81 +69,113 @@ where
     K: Hash + Eq + Clone,
     H: BuildHasher,
 {
-    pub fn get_mut(&mut self, key: &K) -> std::option::Option<&mut V> {
-        if let Some(&index) = self.store.get(key) {
-            self.order.move_to_front(index);
+    pub fn get_mut(&mut self, key: &K) -> Option<EntryState<&mut V>> {
+        let Self { store, order, .. } = self;
+        store.get(key).map(move |&entry| {
+            entry.map(move |index| {
+                order.move_to_front(index);
 
-            Some(&mut self.order.get_mut(index).1)
-        } else {
-            None
-        }
+                &mut order.get_mut(index).1
+            })
+        })
     }
 
-    pub fn get(&mut self, key: &K) -> Option<&V> {
-        self.get_mut(key).map(|v| &*v)
+    pub fn get(&mut self, key: &K) -> Option<EntryState<&V>> {
+        // Hopefully downgrading the reference is a NOOP.
+        self.get_mut(key).map(|e| e.map(|v| &*v))
     }
 
     /// Allows us to get a const reference without having `&mut self`. WARNING: This will not update
     /// the LRU order!
-    pub fn get_const(&self, key: &K) -> Option<&V> {
-        if let Some(&index) = self.store.get(key) {
-            Some(&self.order.get(index).1)
-        } else {
-            None
-        }
+    pub fn get_const(&self, key: &K) -> Option<EntryState<&V>> {
+        self.store
+            .get(key)
+            .cloned()
+            .map(|entry| entry.map(|index| &self.order.get(index).1))
     }
 
-    pub fn insert(&mut self, key: K, val: V) -> Option<V> {
+    /// Inserts a new `val` for `key`, returning the old entry if it exists.
+    pub fn insert(&mut self, key: K, val: V) -> Option<EntryState<V>> {
         let Self { store, order, .. } = self;
-        let mut old_val = None;
-        let entry = store.entry(key.clone());
-        match entry {
-            hash_map::Entry::Occupied(entry) => {
-                let index = *entry.get();
-                order.move_to_front(index);
-                old_val = order.set(index, (key, val)).map(|(_, v)| v);
-            }
-            hash_map::Entry::Vacant(entry) => {
-                entry.insert(order.push_front(Some((key, val))));
-            }
-        }
+        match store.entry(key.clone()) {
+            hash_map::Entry::Occupied(mut occupied) => match *occupied.get() {
+                EntryState::Cached(index) => {
+                    order.move_to_front(index);
 
-        old_val
-    }
+                    order
+                        .set(index, (key, val))
+                        .map(|(_, v)| EntryState::Cached(v))
+                }
+                EntryState::Evicted => {
+                    let new_index = order.push_front(Some((key, val)));
+                    occupied.insert(EntryState::Cached(new_index));
+                    self.num_evicted -= 1;
 
-    pub fn get_or_insert_with(&mut self, key: K, f: impl FnOnce() -> V) -> &mut V {
-        let val = self.store.entry(key);
-        let Self { order, .. } = self;
+                    Some(EntryState::Evicted)
+                }
+            },
+            hash_map::Entry::Vacant(vacant) => {
+                vacant.insert(EntryState::Cached(order.push_front(Some((key, val)))));
 
-        match val {
-            Entry::Occupied(occupied) => {
-                let index = *occupied.get();
-                order.move_to_front(index);
-
-                &mut order.get_mut(index).1
-            }
-            Entry::Vacant(vacant) => {
-                let key = vacant.key().clone();
-                let index = *vacant.insert(order.push_front(None));
-                order.set(index, (key, f()));
-
-                &mut order.get_mut(index).1
+                None
             }
         }
     }
 
-    pub fn remove(&mut self, k: &K) -> Option<V> {
-        if let Some(index) = self.store.remove(k) {
-            let (_key, value) = self.order.remove(index);
+    /// Tries to get the value for `key`, returning it if it exists. If the entry state is evicted,
+    /// calls `f` to repopulate the entry. Otherwise, returns `None`.
+    pub fn get_or_repopulate_with(&mut self, key: K, f: impl FnOnce() -> V) -> Option<&mut V> {
+        let Self { store, order, .. } = self;
+        match store.entry(key.clone()) {
+            hash_map::Entry::Occupied(mut occupied) => match *occupied.get() {
+                EntryState::Cached(index) => {
+                    order.move_to_front(index);
 
-            Some(value)
-        } else {
-            None
+                    Some(&mut order.get_mut(index).1)
+                }
+                EntryState::Evicted => {
+                    let new_index = order.push_front(Some((key, f())));
+                    occupied.insert(EntryState::Cached(new_index));
+                    self.num_evicted -= 1;
+
+                    Some(&mut order.get_mut(new_index).1)
+                }
+            },
+            hash_map::Entry::Vacant(_) => None,
         }
     }
 
+    // Removes any trace of `key`, such that further accesses will return `None` until a new value
+    // is inserted.
+    pub fn remove(&mut self, key: &K) -> Option<EntryState<V>> {
+        self.store.remove(key).map(|entry| match entry {
+            EntryState::Cached(index) => EntryState::Cached(self.order.remove(index).1),
+            EntryState::Evicted => {
+                self.num_evicted -= 1;
+
+                EntryState::Evicted
+            }
+        })
+    }
+
+    /// Evicts the least-recently used value. This will leave a sentinel behind so that further
+    /// accesses will return `Some(EntryState::Evicted)` until the key is removed or a new entry is
+    /// inserted.
     pub fn evict_lru(&mut self) -> Option<(K, V)> {
-        if self.is_empty() {
+        if self.len_cached() == 0 {
+            return None;
+        }
+
+        let (key, value) = self.order.pop_back();
+        *self.store.get_mut(&key).unwrap() = EntryState::Evicted;
+        self.num_evicted += 1;
+
+        Some((key, value))
+    }
+
+    /// Removes the least-recently used value, leaving no trace.
+    pub fn remove_lru(&mut self) -> Option<(K, V)> {
+        if self.len_cached() == 0 {
             return None;
         }
 
@@ -116,24 +188,19 @@ where
     pub fn clear(&mut self) {
         self.store.clear();
         self.order.clear();
+        self.num_evicted = 0;
     }
 
-    pub fn len(&self) -> usize {
+    pub fn len_cached(&self) -> usize {
+        self.len_tracked() - self.len_evicted()
+    }
+
+    pub fn len_evicted(&self) -> usize {
+        self.num_evicted
+    }
+
+    pub fn len_tracked(&self) -> usize {
         self.store.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.store.is_empty()
-    }
-
-    pub fn keys(&self) -> impl Iterator<Item = &K> {
-        self.store.keys()
-    }
-
-    pub fn values(&self) -> impl Iterator<Item = &V> {
-        let Self { store, order, .. } = self;
-
-        store.iter().map(move |(_k, index)| &order.get(*index).1)
     }
 }
 
@@ -253,21 +320,60 @@ impl<T> LruList<T> {
     }
 }
 
+// ████████╗███████╗███████╗████████╗███████╗
+// ╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝██╔════╝
+//    ██║   █████╗  ███████╗   ██║   ███████╗
+//    ██║   ██╔══╝  ╚════██║   ██║   ╚════██║
+//    ██║   ███████╗███████║   ██║   ███████║
+//    ╚═╝   ╚══════╝╚══════╝   ╚═╝   ╚══════╝
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     use std::collections::hash_map::RandomState;
-    #[test]
-    fn get_after_insert() {
-        let mut cache = LruCache::with_hasher(RandomState::default());
 
+    #[test]
+    fn get_after_insert_and_evict_and_remove() {
+        let mut cache = LruCache::with_hasher(RandomState::default());
         assert_eq!(cache.get(&1), None);
 
         cache.insert(1, 2);
+        assert_eq!(cache.get(&1), Some(EntryState::Cached(&2)));
+        assert_eq!(cache.len_cached(), 1);
 
-        assert_eq!(cache.get(&1), Some(&2));
+        cache.evict_lru();
+        assert_eq!(cache.get(&1), Some(EntryState::Evicted));
+        assert_eq!(cache.len_evicted(), 1);
+
+        cache.remove(&1);
+        assert_eq!(cache.get(&1), None);
+        assert_eq!(cache.len_evicted(), 0);
     }
+
+    #[test]
+    fn get_after_insert_and_remove() {
+        let mut cache = LruCache::with_hasher(RandomState::default());
+
+        cache.insert(1, 2);
+
+        cache.remove(&1);
+        assert_eq!(cache.get(&1), None);
+        assert_eq!(cache.len_evicted(), 0);
+    }
+
+    #[test]
+    fn repopulate_after_evict() {
+        let mut cache = LruCache::with_hasher(RandomState::default());
+        assert_eq!(cache.get(&1), None);
+
+        cache.insert(1, 2);
+        cache.evict_lru();
+
+        assert_eq!(cache.get_or_repopulate_with(1, || 3), Some(&mut 3));
+        assert_eq!(cache.len_evicted(), 0);
+    }
+
     #[test]
     fn evict_lru() {
         let mut cache = LruCache::with_hasher(RandomState::default());
@@ -284,6 +390,19 @@ mod tests {
         assert_eq!(cache.evict_lru(), Some((2, 5)));
         assert_eq!(cache.evict_lru(), Some((1, 2)));
 
-        assert!(cache.is_empty());
+        assert!(cache.len_cached() == 0);
+        assert!(cache.len_evicted() == 4);
+    }
+
+    #[test]
+    fn get_const_does_not_affect_lru_order() {
+        let mut cache = LruCache::with_hasher(RandomState::default());
+
+        cache.insert(1, 2);
+        cache.insert(2, 3);
+        cache.get_const(&1);
+
+        assert_eq!(cache.evict_lru(), Some((1, 2)));
+        assert_eq!(cache.evict_lru(), Some((2, 3)));
     }
 }

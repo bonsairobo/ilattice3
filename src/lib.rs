@@ -2,6 +2,7 @@
 
 pub mod algos;
 pub mod chunked_lattice_map;
+pub mod compressible_map;
 pub mod extent;
 pub mod fn_lattice_map;
 pub mod indexer;
@@ -43,6 +44,19 @@ pub use vec_lattice_map::VecLatticeMap;
 
 pub trait IsEmpty {
     fn is_empty(&self) -> bool;
+}
+
+/// A type that's compressible using algorithm `A`.
+pub trait Compressible<A> {
+    type Compressed: Decompressible<A>;
+
+    fn compress(&self, params: A) -> Self::Compressed;
+}
+
+pub trait Decompressible<A> {
+    type Decompressed: Compressible<A>;
+
+    fn decompress(&self) -> Self::Decompressed;
 }
 
 pub mod prelude {
