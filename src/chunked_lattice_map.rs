@@ -6,10 +6,8 @@ use crate::{
     Extent, Point, VecLatticeMap, YLevelsIndexer,
 };
 
-pub use compressible_map::BincodeLz4;
-
 use compressible_map::{
-    BincodeLz4Compressed, Compressible, CompressibleMap, Decompressible, LocalCache,
+    BincodeLz4, BincodeLz4Compressed, Compressible, CompressibleMap, Decompressible, LocalCache,
     MaybeCompressed,
 };
 use fnv::FnvHashMap;

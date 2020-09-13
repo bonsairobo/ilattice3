@@ -41,6 +41,9 @@ pub use tile::Tile;
 pub use transform::{Matrix, Transform};
 pub use vec_lattice_map::VecLatticeMap;
 
+// Re-exports
+pub use compressible_map;
+
 pub trait IsEmpty {
     fn is_empty(&self) -> bool;
 }
