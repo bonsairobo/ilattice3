@@ -1,7 +1,7 @@
 use crate::{copy_extent, prelude::*, Extent, Transform, YLevelsIndexer};
 
 use compressible_map::{Compressible, Decompressible};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 
 /// A map from points in an extent to some kind of data `T`, stored as a `Vec<T>`.
@@ -193,63 +193,6 @@ impl<T: Clone, I: Indexer> VecLatticeMap<T, I> {
         copy_extent(map, &mut copy, extent);
 
         copy
-    }
-}
-
-#[derive(Clone)]
-pub struct PortableLZ4 {
-    pub level: u32,
-}
-
-/// A compressed `VecLatticeMap` that can be stored and decompressed safely on any platform.
-#[derive(Clone)]
-pub struct PortableCompressedVecLatticeMap<T, I> {
-    compressed_bytes: Vec<u8>,
-    marker: std::marker::PhantomData<(T, I)>,
-}
-
-impl<T, I> Decompressible<PortableLZ4> for PortableCompressedVecLatticeMap<T, I>
-where
-    T: DeserializeOwned + Serialize,
-{
-    type Decompressed = VecLatticeMap<T, I>;
-
-    fn decompress(&self) -> Self::Decompressed {
-        let mut decoder = lz4::Decoder::new(self.compressed_bytes.as_slice()).unwrap();
-        let mut decompressed_bytes = Vec::new();
-        std::io::copy(&mut decoder, &mut decompressed_bytes).unwrap();
-
-        bincode::deserialize(decompressed_bytes.as_slice()).unwrap()
-    }
-}
-
-impl<T, I> Compressible<PortableLZ4> for VecLatticeMap<T, I>
-where
-    T: DeserializeOwned + Serialize,
-{
-    type Compressed = PortableCompressedVecLatticeMap<T, I>;
-
-    /// Compress the map in-memory using the LZ4 algorithm. The result should be safe to decompress
-    /// on another platform.
-    ///
-    /// TODO: maybe this should use a different algorithm with better compression ratio, if it's
-    /// intended for long-term storage
-    fn compress(&self, params: PortableLZ4) -> Self::Compressed {
-        let serialized_bytes = bincode::serialize(&self).unwrap();
-
-        let mut compressed_bytes = Vec::new();
-        let mut encoder = lz4::EncoderBuilder::new()
-            .level(params.level)
-            .build(&mut compressed_bytes)
-            .unwrap();
-
-        std::io::copy(&mut std::io::Cursor::new(serialized_bytes), &mut encoder).unwrap();
-        let (_output, _result) = encoder.finish();
-
-        PortableCompressedVecLatticeMap {
-            compressed_bytes,
-            marker: Default::default(),
-        }
     }
 }
 
@@ -511,6 +454,8 @@ mod tests {
 mod compression_tests {
     use super::*;
 
+    use compressible_map::BincodeLz4;
+
     use std::io::Write;
 
     const LZ4_LEVEL: u32 = 1;
@@ -522,7 +467,7 @@ mod compression_tests {
         let map = VecLatticeMap::<_, YLevelsIndexer>::fill(extent, 0);
 
         let start = std::time::Instant::now();
-        let compressed_map = map.compress(PortableLZ4 { level: LZ4_LEVEL });
+        let compressed_map = map.compress(BincodeLz4 { level: LZ4_LEVEL });
         let elapsed_micros = start.elapsed().as_micros();
         std::io::stdout()
             .write(format!("portable compressing map took {} micros\n", elapsed_micros).as_bytes())
