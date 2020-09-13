@@ -1,7 +1,6 @@
-use crate::{
-    copy_extent, prelude::*, Compressible, Decompressible, Extent, Transform, YLevelsIndexer,
-};
+use crate::{copy_extent, prelude::*, Extent, Transform, YLevelsIndexer};
 
+use compressible_map::{Compressible, Decompressible};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::marker::PhantomData;
 
@@ -266,6 +265,12 @@ pub struct FastCompressedVecLatticeMap<T, I> {
     compressed_bytes: Vec<u8>,
     extent: Extent,
     marker: std::marker::PhantomData<(T, I)>,
+}
+
+impl<T, I> FastCompressedVecLatticeMap<T, I> {
+    pub fn get_extent(&self) -> &Extent {
+        &self.extent
+    }
 }
 
 impl<T, I> Decompressible<FastLZ4> for FastCompressedVecLatticeMap<T, I>
