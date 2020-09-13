@@ -133,7 +133,7 @@ where
 
     /// Returns the chunk containing `point` if it exists.
     pub fn get_chunk_containing_point<'a>(
-        &'a mut self,
+        &'a self,
         point: &Point,
         local_cache: &'a LocalChunkCache<T, M, I>,
     ) -> Option<(Point, &Chunk<T, M, I>)> {
@@ -362,6 +362,44 @@ where
     fn maybe_get_world_ref_mut(&mut self, p: &Point) -> Option<&mut T> {
         self.get_mut_chunk_containing_point(p)
             .map(|(_key, chunk)| chunk.map.get_world_ref_mut(p))
+    }
+}
+
+/// A thread-local reader of a `ChunkedLatticeMap` which stores a cache of chunks that were
+/// decompressed after missing the global cache of chunks.
+pub struct ChunkedLatticeMapReader<'a, T, M, I>
+where
+    M: Clone,
+    I: Indexer,
+{
+    pub map: &'a ChunkedLatticeMap<T, M, I>,
+    pub local_cache: LocalChunkCache<T, M, I>,
+}
+
+impl<'a, T, M, I> ChunkedLatticeMapReader<'a, T, M, I>
+where
+    M: Clone,
+    I: Indexer,
+{
+    pub fn new(map: &'a ChunkedLatticeMap<T, M, I>) -> Self {
+        Self {
+            map,
+            local_cache: LocalChunkCache::new(),
+        }
+    }
+}
+
+impl<'a, T, M, I> MaybeGetWorldRef for ChunkedLatticeMapReader<'a, T, M, I>
+where
+    M: Clone,
+    I: Indexer,
+{
+    type Data = T;
+
+    fn maybe_get_world_ref(&self, p: &Point) -> Option<&T> {
+        self.map
+            .get_chunk_containing_point(p, &self.local_cache)
+            .map(|(_key, chunk)| chunk.map.get_world_ref(p))
     }
 }
 
