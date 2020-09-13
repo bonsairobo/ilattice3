@@ -7,9 +7,11 @@ use crate::{
 };
 
 use compressible_map::{
-    Compressible, CompressibleMap, Decompressible, LocalCache, MaybeCompressed,
+    BincodeLz4, BincodeLz4Compressed, Compressible, CompressibleMap, Decompressible, LocalCache,
+    MaybeCompressed,
 };
-use serde::{Deserialize, Serialize};
+use fnv::FnvHashMap;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 /// Stores a partial function on ZxZxZ in same-sized chunks using a `CompressibleMap`. Optionally,
 /// you can also store some metadata of type `M` for each chunk.
@@ -349,6 +351,43 @@ where
         let extent = self.extent_for_chunk_key(chunk_key).padded(1);
 
         self.copy_extent_into_new_map(extent, local_cache)
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct SerializableChunkedLatticeMap<T, M, I> {
+    pub chunk_size: Point,
+    pub compressed_chunks: FnvHashMap<Point, BincodeLz4Compressed<Chunk<T, M, I>>>,
+}
+
+impl<T, M, I> ChunkedLatticeMap<T, M, I>
+where
+    T: DeserializeOwned + Serialize,
+    M: Clone + DeserializeOwned + Serialize,
+    I: Indexer + DeserializeOwned + Serialize,
+{
+    pub fn to_serializable(&self) -> SerializableChunkedLatticeMap<T, M, I> {
+        let portable_chunks = self
+            .chunks
+            .iter_maybe_compressed()
+            .map(|(chunk_key, chunk)| {
+                let portable_chunk: BincodeLz4Compressed<Chunk<T, M, I>> = match chunk {
+                    MaybeCompressed::Compressed(compressed_chunk) => compressed_chunk
+                        .decompress()
+                        .compress(BincodeLz4 { level: 10 }),
+                    MaybeCompressed::Decompressed(chunk) => {
+                        chunk.compress(BincodeLz4 { level: 10 })
+                    }
+                };
+
+                (*chunk_key, portable_chunk)
+            })
+            .collect();
+
+        SerializableChunkedLatticeMap {
+            compressed_chunks: portable_chunks,
+            chunk_size: self.chunk_size,
+        }
     }
 }
 
