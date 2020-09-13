@@ -366,18 +366,16 @@ where
     M: Clone + DeserializeOwned + Serialize,
     I: Indexer + DeserializeOwned + Serialize,
 {
-    pub fn to_serializable(&self) -> SerializableChunkedLatticeMap<T, M, I> {
+    pub fn to_serializable(&self, params: BincodeLz4) -> SerializableChunkedLatticeMap<T, M, I> {
         let portable_chunks = self
             .chunks
             .iter_maybe_compressed()
             .map(|(chunk_key, chunk)| {
                 let portable_chunk: BincodeLz4Compressed<Chunk<T, M, I>> = match chunk {
-                    MaybeCompressed::Compressed(compressed_chunk) => compressed_chunk
-                        .decompress()
-                        .compress(BincodeLz4 { level: 10 }),
-                    MaybeCompressed::Decompressed(chunk) => {
-                        chunk.compress(BincodeLz4 { level: 10 })
+                    MaybeCompressed::Compressed(compressed_chunk) => {
+                        compressed_chunk.decompress().compress(params)
                     }
+                    MaybeCompressed::Decompressed(chunk) => chunk.compress(params),
                 };
 
                 (*chunk_key, portable_chunk)
@@ -387,6 +385,22 @@ where
         SerializableChunkedLatticeMap {
             compressed_chunks: portable_chunks,
             chunk_size: self.chunk_size,
+        }
+    }
+
+    pub fn from_serializable(
+        map: &SerializableChunkedLatticeMap<T, M, I>,
+        params: FastLZ4,
+    ) -> Self {
+        let mut compressible_map = CompressibleFnvMap::new(params);
+        for (chunk_key, compressed_chunk) in map.compressed_chunks.iter() {
+            compressible_map.insert(*chunk_key, compressed_chunk.decompress());
+            compressible_map.compress_lru();
+        }
+
+        Self {
+            chunks: compressible_map,
+            chunk_size: map.chunk_size,
         }
     }
 }

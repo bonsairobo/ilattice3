@@ -196,7 +196,7 @@ impl<T: Clone, I: Indexer> VecLatticeMap<T, I> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct FastLZ4 {
     pub level: u32,
 }

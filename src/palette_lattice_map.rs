@@ -3,10 +3,11 @@
 //! that wrap these types to do so.
 
 use crate::{
-    chunked_lattice_map::SerializableChunkedLatticeMap, prelude::*, ChunkedLatticeMap, Extent,
-    LocalChunkCache, Point, VecLatticeMap, YLevelsIndexer,
+    chunked_lattice_map::SerializableChunkedLatticeMap, prelude::*, vec_lattice_map::FastLZ4,
+    ChunkedLatticeMap, Extent, LocalChunkCache, Point, VecLatticeMap, YLevelsIndexer,
 };
 
+use compressible_map::BincodeLz4;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 pub trait GetPaletteAddress {
@@ -136,10 +137,20 @@ where
     M: Clone + DeserializeOwned + Serialize,
     I: Indexer + DeserializeOwned + Serialize,
 {
-    pub fn to_serializable(&self) -> SerializablePaletteLatticeMap<T, P, M, I> {
+    pub fn to_serializable(&self, params: BincodeLz4) -> SerializablePaletteLatticeMap<T, P, M, I> {
         SerializablePaletteLatticeMap {
-            compressed_chunks: self.map.to_serializable(),
+            compressed_chunks: self.map.to_serializable(params),
             palette: self.palette.clone(),
+        }
+    }
+
+    pub fn from_serializable(
+        map: SerializablePaletteLatticeMap<T, P, M, I>,
+        params: FastLZ4,
+    ) -> Self {
+        Self {
+            palette: map.palette,
+            map: ChunkedLatticeMap::from_serializable(&map.compressed_chunks, params),
         }
     }
 }
