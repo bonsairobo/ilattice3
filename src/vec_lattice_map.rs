@@ -197,7 +197,7 @@ impl<T: Clone, I: Indexer> VecLatticeMap<T, I> {
 }
 
 #[derive(Clone, Copy)]
-pub struct FastLZ4 {
+pub struct FastLz4 {
     pub level: u32,
 }
 
@@ -216,7 +216,7 @@ impl<T, I> FastCompressedVecLatticeMap<T, I> {
     }
 }
 
-impl<T, I> Decompressible<FastLZ4> for FastCompressedVecLatticeMap<T, I>
+impl<T, I> Decompressible<FastLz4> for FastCompressedVecLatticeMap<T, I>
 where
     I: Indexer,
 {
@@ -240,7 +240,7 @@ where
     }
 }
 
-impl<T, I> Compressible<FastLZ4> for VecLatticeMap<T, I>
+impl<T, I> Compressible<FastLz4> for VecLatticeMap<T, I>
 where
     I: Indexer,
 {
@@ -250,7 +250,7 @@ where
     ///
     /// WARNING: For performance, this reinterprets the inner vector as a byte slice without
     /// accounting for endianness. This is not compatible across platforms.
-    fn compress(&self, params: FastLZ4) -> FastCompressedVecLatticeMap<T, I> {
+    fn compress(&self, params: FastLz4) -> FastCompressedVecLatticeMap<T, I> {
         let mut compressed_bytes = Vec::new();
         let values_slice: &[u8] = unsafe {
             std::slice::from_raw_parts(
@@ -495,7 +495,7 @@ mod compression_tests {
         let map = VecLatticeMap::<_, YLevelsIndexer>::fill(extent, 0);
 
         let start = std::time::Instant::now();
-        let compressed_map = map.compress(FastLZ4 { level: LZ4_LEVEL });
+        let compressed_map = map.compress(FastLz4 { level: LZ4_LEVEL });
         let elapsed_micros = start.elapsed().as_micros();
         std::io::stdout()
             .write(

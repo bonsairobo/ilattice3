@@ -2,12 +2,14 @@ use crate::{
     bounding_extent, copy_extent,
     lattice_map::LatticeMapKeyValIterator,
     prelude::*,
-    vec_lattice_map::{FastCompressedVecLatticeMap, FastLZ4},
+    vec_lattice_map::{FastCompressedVecLatticeMap, FastLz4},
     Extent, Point, VecLatticeMap, YLevelsIndexer,
 };
 
+pub use compressible_map::BincodeLz4;
+
 use compressible_map::{
-    BincodeLz4, BincodeLz4Compressed, Compressible, CompressibleMap, Decompressible, LocalCache,
+    BincodeLz4Compressed, Compressible, CompressibleMap, Decompressible, LocalCache,
     MaybeCompressed,
 };
 use fnv::FnvHashMap;
@@ -21,7 +23,7 @@ where
     M: Clone,
 {
     chunk_size: Point,
-    pub chunks: CompressibleFnvMap<Point, Chunk<T, M, I>, FastLZ4>,
+    pub chunks: CompressibleFnvMap<Point, Chunk<T, M, I>, FastLz4>,
 }
 
 type CompressibleFnvMap<K, V, A> = CompressibleMap<K, V, A, fnv::FnvBuildHasher>;
@@ -50,7 +52,7 @@ pub struct FastCompressedChunk<T, M, I> {
 
 // PERF: cloning the metadata is unfortunate
 
-impl<T, M, I> Decompressible<FastLZ4> for FastCompressedChunk<T, M, I>
+impl<T, M, I> Decompressible<FastLz4> for FastCompressedChunk<T, M, I>
 where
     I: Indexer,
     M: Clone,
@@ -65,14 +67,14 @@ where
     }
 }
 
-impl<T, M, I> Compressible<FastLZ4> for Chunk<T, M, I>
+impl<T, M, I> Compressible<FastLz4> for Chunk<T, M, I>
 where
     I: Indexer,
     M: Clone,
 {
     type Compressed = FastCompressedChunk<T, M, I>;
 
-    fn compress(&self, params: FastLZ4) -> Self::Compressed {
+    fn compress(&self, params: FastLz4) -> Self::Compressed {
         FastCompressedChunk {
             metadata: self.metadata.clone(),
             compressed_map: self.map.compress(params),
@@ -92,7 +94,7 @@ where
         Self {
             chunk_size,
             // TODO: don't hardcore the compression level
-            chunks: CompressibleFnvMap::new(FastLZ4 { level: 10 }),
+            chunks: CompressibleFnvMap::new(FastLz4 { level: 10 }),
         }
     }
 
@@ -390,7 +392,7 @@ where
 
     pub fn from_serializable(
         map: &SerializableChunkedLatticeMap<T, M, I>,
-        params: FastLZ4,
+        params: FastLz4,
     ) -> Self {
         let mut compressible_map = CompressibleFnvMap::new(params);
         for (chunk_key, compressed_chunk) in map.compressed_chunks.iter() {

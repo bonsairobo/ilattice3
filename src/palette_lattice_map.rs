@@ -3,7 +3,7 @@
 //! that wrap these types to do so.
 
 use crate::{
-    chunked_lattice_map::SerializableChunkedLatticeMap, prelude::*, vec_lattice_map::FastLZ4,
+    chunked_lattice_map::SerializableChunkedLatticeMap, prelude::*, vec_lattice_map::FastLz4,
     ChunkedLatticeMap, Extent, LocalChunkCache, Point, VecLatticeMap, YLevelsIndexer,
 };
 
@@ -146,7 +146,7 @@ where
 
     pub fn from_serializable(
         map: SerializablePaletteLatticeMap<T, P, M, I>,
-        params: FastLZ4,
+        params: FastLz4,
     ) -> Self {
         Self {
             palette: map.palette,
