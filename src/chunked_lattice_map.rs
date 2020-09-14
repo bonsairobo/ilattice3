@@ -106,17 +106,14 @@ where
 
     /// Returns the key of the chunk that contains `point`.
     pub fn chunk_key(&self, point: &Point) -> Point {
-        *point / self.chunk_size
+        chunk_key_containing_point(&self.chunk_size, point)
     }
 
     /// Returns the extent whose points are exactly the set of chunks (keys) that contain any of the
     /// points in `extent`. For example, if the chunk size is 2x2x2, then the extent from (0, 0, 0)
     /// to (8, 8, 8) would return the chunk key extent from (0, 0, 0) to (4, 4, 4).
     fn key_extent(&self, extent: &Extent) -> Extent {
-        let key_min = self.chunk_key(&extent.get_minimum());
-        let key_max = self.chunk_key(&extent.get_world_max());
-
-        Extent::from_min_and_world_max(key_min, key_max)
+        chunk_key_extent(&self.chunk_size, extent)
     }
 
     pub fn extent_for_chunk_key(&self, key: &Point) -> Extent {
@@ -211,12 +208,24 @@ where
     }
 }
 
+/// Returns the key of the chunk containing `point`.
+pub fn chunk_key_containing_point(chunk_size: &Point, point: &Point) -> Point {
+    *point / *chunk_size
+}
+
 /// Returns the extent of the chunk at `key`.
 pub fn extent_for_chunk_key(chunk_size: &Point, key: &Point) -> Extent {
     let min = *key * *chunk_size;
     let local_sup = *chunk_size;
 
     Extent::from_min_and_local_supremum(min, local_sup)
+}
+
+pub fn chunk_key_extent(chunk_size: &Point, extent: &Extent) -> Extent {
+    let key_min = chunk_key_containing_point(chunk_size, &extent.get_minimum());
+    let key_max = chunk_key_containing_point(chunk_size, &extent.get_world_max());
+
+    Extent::from_min_and_world_max(key_min, key_max)
 }
 
 impl<T: Clone, M, I> ChunkedLatticeMap<T, M, I>
