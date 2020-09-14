@@ -20,7 +20,7 @@ let sampled_sphere =
 ```
 
 In addition to the `FnLatticeMap` and `VecLatticeMap`, there are:
-* `ChunkedLatticeMap`: a sparse, compressible lattice map implemented as a hash map of `VecLatticeMap`s
+* `ChunkedLatticeMap`: a sparse lattice map implemented as a "[compressible map](https://github.com/bonsairobo/compressible-map)" of `VecLatticeMap`s
 * `PaletteLatticeMap`: a `ChunkedLatticeMap` where data shared between voxels lives in a separate "palette" vector
 
 Other miscellaneous features:
