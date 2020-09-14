@@ -44,8 +44,8 @@ impl<T, I> Chunk<T, (), I> {
 }
 
 pub struct FastCompressedChunk<T, M, I> {
-    metadata: M, // metadata doesn't get compressed, hope it's small!
-    compressed_map: FastCompressedVecLatticeMap<T, I>,
+    pub metadata: M, // metadata doesn't get compressed, hope it's small!
+    pub compressed_map: FastCompressedVecLatticeMap<T, I>,
 }
 
 // PERF: cloning the metadata is unfortunate

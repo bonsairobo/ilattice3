@@ -205,8 +205,8 @@ pub struct FastLz4 {
 /// was compressed.
 #[derive(Clone)]
 pub struct FastCompressedVecLatticeMap<T, I> {
-    compressed_bytes: Vec<u8>,
-    extent: Extent,
+    pub compressed_bytes: Vec<u8>,
+    pub extent: Extent,
     marker: std::marker::PhantomData<(T, I)>,
 }
 
