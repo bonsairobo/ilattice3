@@ -339,12 +339,6 @@ where
         new_map
     }
 
-    /// Copies all points from `self` into a new dense map. Any points in `self` that have values
-    /// will take on the value `T::default()`.
-    pub fn copy_into_new_map(&self, local_cache: &LocalChunkCache<T, M, I>) -> VecLatticeMap<T, I> {
-        self.copy_extent_into_new_map(self.bounding_extent(), local_cache)
-    }
-
     /// Copies the entire chunk and values at adjacent points into a new dense map. For example,
     /// if the key for chunk with extent from (2, 2, 2) to (4, 4, 4) is chose, then the extent from
     /// (1, 1, 1) to (5, 5, 5) will be copied.
