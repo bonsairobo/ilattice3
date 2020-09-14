@@ -242,6 +242,7 @@ where
 
 impl<T, I> Compressible<FastLz4> for VecLatticeMap<T, I>
 where
+    T: Copy, // this is important so we don't serialize a vector of non-POD type
     I: Indexer,
 {
     type Compressed = FastCompressedVecLatticeMap<T, I>;
