@@ -249,7 +249,8 @@ impl Extent {
         ]
     }
 
-    /// Returns the set of all points on the boundary of the extent.
+    /// Returns a (non-unique) set of extents that covers all of the boundary points. There are at
+    /// most 6 (one for each face of the extent), and they won't overlap.
     pub fn get_boundary_extents(&self) -> Vec<Self> {
         let base_area = self.local_sup.x * self.local_sup.y;
         if base_area * self.local_sup.z == 0 {
