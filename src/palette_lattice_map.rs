@@ -19,6 +19,7 @@ pub trait GetPaletteAddress {
 /// implement `GetPaletteAddress` because it is used to look up a `T` value in the palette.
 pub struct PaletteLatticeMap<T, P, M = (), I = YLevelsIndexer>
 where
+    P: Copy,
     M: Clone,
     I: Indexer,
 {
@@ -30,6 +31,7 @@ where
 
 impl<T, P, M, I> PaletteLatticeMap<T, P, M, I>
 where
+    P: Copy,
     M: Clone,
     I: Indexer,
 {
@@ -74,7 +76,7 @@ where
 
 impl<T, P, M, I> PaletteLatticeMap<T, P, M, I>
 where
-    P: Clone + Default,
+    P: Copy + Default,
     M: Clone,
     I: Indexer,
 {
@@ -124,6 +126,8 @@ where
     }
 }
 
+/// Call `PaletteLatticeMap::to_serializable` to get this type, which is an LZ4-compressed,
+/// serde-serializable type.
 #[derive(Deserialize, Serialize)]
 pub struct SerializablePaletteLatticeMap<T, P, M, I> {
     pub compressed_chunks: SerializableChunkedLatticeMap<P, M, I>,
@@ -133,7 +137,7 @@ pub struct SerializablePaletteLatticeMap<T, P, M, I> {
 impl<T, P, M, I> PaletteLatticeMap<T, P, M, I>
 where
     T: Clone + DeserializeOwned + Serialize,
-    P: DeserializeOwned + Serialize,
+    P: Copy + DeserializeOwned + Serialize,
     M: Clone + DeserializeOwned + Serialize,
     I: Indexer + DeserializeOwned + Serialize,
 {
@@ -157,7 +161,7 @@ where
 
 impl<T, P, M, I> MaybeGetWorldRefMut for PaletteLatticeMap<T, P, M, I>
 where
-    P: Clone + GetPaletteAddress,
+    P: Copy + GetPaletteAddress,
     M: Clone,
     I: Indexer,
 {
@@ -175,6 +179,7 @@ where
 /// decompressed after missing the global cache of chunks.
 pub struct PaletteLatticeMapReader<'a, T, P, M, I>
 where
+    P: Copy,
     M: Clone,
     I: Clone + Indexer,
 {
@@ -184,6 +189,7 @@ where
 
 impl<'a, T, P, M, I> PaletteLatticeMapReader<'a, T, P, M, I>
 where
+    P: Copy,
     M: Clone,
     I: Clone + Indexer,
 {
@@ -197,7 +203,7 @@ where
 
 impl<'a, T, P, M, I> MaybeGetWorldRef for PaletteLatticeMapReader<'a, T, P, M, I>
 where
-    P: Clone + GetPaletteAddress,
+    P: Copy + GetPaletteAddress,
     M: Clone,
     I: Clone + Indexer,
 {
@@ -233,7 +239,7 @@ where
 impl<'a, T, P, I> GetLinear for LatticeVoxels<'a, T, P, I>
 where
     T: Clone,
-    P: GetPaletteAddress,
+    P: Copy + GetPaletteAddress,
     I: Indexer,
 {
     type Data = T;
@@ -245,7 +251,7 @@ where
 
 impl<'a, T, P, I> GetLinearRef for LatticeVoxels<'a, T, P, I>
 where
-    P: GetPaletteAddress,
+    P: Copy + GetPaletteAddress,
     I: Indexer,
 {
     type Data = T;
@@ -276,7 +282,7 @@ where
 
 impl<'a, T, P, I> GetLinearRef for ChunkVoxelsRef<'a, T, P, I>
 where
-    P: Clone + GetPaletteAddress,
+    P: Copy + GetPaletteAddress,
     I: Indexer,
 {
     type Data = T;
@@ -307,7 +313,7 @@ where
 
 impl<'a, T, P, I> GetLinearRefMut for ChunkVoxelsRefMut<'a, T, P, I>
 where
-    P: Clone + GetPaletteAddress,
+    P: Copy + GetPaletteAddress,
     I: Indexer,
 {
     type Data = T;

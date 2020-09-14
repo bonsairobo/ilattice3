@@ -17,6 +17,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 /// you can also store some metadata of type `M` for each chunk.
 pub struct ChunkedLatticeMap<T, M = (), I = YLevelsIndexer>
 where
+    T: Copy,
     I: Indexer,
     M: Clone,
 {
@@ -52,6 +53,7 @@ pub struct FastCompressedChunk<T, M, I> {
 
 impl<T, M, I> Decompressible<FastLz4> for FastCompressedChunk<T, M, I>
 where
+    T: Copy,
     I: Indexer,
     M: Clone,
 {
@@ -67,6 +69,7 @@ where
 
 impl<T, M, I> Compressible<FastLz4> for Chunk<T, M, I>
 where
+    T: Copy,
     I: Indexer,
     M: Clone,
 {
@@ -82,6 +85,7 @@ where
 
 impl<T, M, I> ChunkedLatticeMap<T, M, I>
 where
+    T: Copy,
     I: Indexer,
     M: Clone,
 {
@@ -217,6 +221,7 @@ pub fn extent_for_chunk_key(chunk_size: &Point, key: &Point) -> Extent {
 
 impl<T: Clone, M, I> ChunkedLatticeMap<T, M, I>
 where
+    T: Copy,
     M: Clone,
     I: Indexer,
 {
@@ -278,7 +283,7 @@ where
 
 impl<T, M, I> ChunkedLatticeMap<T, M, I>
 where
-    T: Clone,
+    T: Copy,
     M: Clone,
     I: Indexer,
 {
@@ -294,7 +299,7 @@ where
         let fill_lat = VecLatticeMap::<_, YLevelsIndexer>::fill(*extent, val);
         self.copy_map_into_chunks(&fill_lat, |_, extent| Chunk {
             metadata: default_metadata.clone(),
-            map: VecLatticeMap::fill(*extent, default_voxel.clone()),
+            map: VecLatticeMap::fill(*extent, default_voxel),
         });
     }
 
@@ -308,14 +313,14 @@ where
     ) -> (Point, &mut T) {
         self.get_mut_or_create(p, |_, extent| Chunk {
             metadata: default_metadata.clone(),
-            map: VecLatticeMap::fill(*extent, default_voxel.clone()),
+            map: VecLatticeMap::fill(*extent, default_voxel),
         })
     }
 }
 
 impl<T, M, I> ChunkedLatticeMap<T, M, I>
 where
-    T: Clone + Default,
+    T: Copy + Default,
     M: Clone,
     I: Indexer,
 {
@@ -328,7 +333,7 @@ where
     ) -> VecLatticeMap<T, I> {
         let mut new_map = VecLatticeMap::fill(extent, T::default());
         for (p, val) in self.iter_point_values(extent, local_cache) {
-            *new_map.get_world_ref_mut(&p) = val.clone();
+            *new_map.get_world_ref_mut(&p) = *val;
         }
 
         new_map
@@ -354,6 +359,8 @@ where
     }
 }
 
+/// Call `ChunkedLatticeMap::to_serializable` to get this type, which is an LZ4-compressed,
+/// serde-serializable type.
 #[derive(Deserialize, Serialize)]
 pub struct SerializableChunkedLatticeMap<T, M, I> {
     pub chunk_size: Point,
@@ -362,7 +369,7 @@ pub struct SerializableChunkedLatticeMap<T, M, I> {
 
 impl<T, M, I> ChunkedLatticeMap<T, M, I>
 where
-    T: DeserializeOwned + Serialize,
+    T: Copy + DeserializeOwned + Serialize,
     M: Clone + DeserializeOwned + Serialize,
     I: Indexer + DeserializeOwned + Serialize,
 {
@@ -392,6 +399,7 @@ where
         map: &SerializableChunkedLatticeMap<T, M, I>,
         params: FastLz4,
     ) -> Self {
+        // PERF: this could easily be done in parallel
         let mut compressible_map = CompressibleFnvMap::new(params);
         for (chunk_key, compressed_chunk) in map.compressed_chunks.iter() {
             compressible_map.insert(*chunk_key, compressed_chunk.decompress());
@@ -407,6 +415,7 @@ where
 
 impl<T, M, I> MaybeGetWorldRefMut for ChunkedLatticeMap<T, M, I>
 where
+    T: Copy,
     M: Clone,
     I: Indexer,
 {
@@ -422,6 +431,7 @@ where
 /// decompressed after missing the global cache of chunks.
 pub struct ChunkedLatticeMapReader<'a, T, M, I>
 where
+    T: Copy,
     M: Clone,
     I: Indexer,
 {
@@ -431,6 +441,7 @@ where
 
 impl<'a, T, M, I> ChunkedLatticeMapReader<'a, T, M, I>
 where
+    T: Copy,
     M: Clone,
     I: Indexer,
 {
@@ -444,6 +455,7 @@ where
 
 impl<'a, T, M, I> MaybeGetWorldRef for ChunkedLatticeMapReader<'a, T, M, I>
 where
+    T: Copy,
     M: Clone,
     I: Indexer,
 {
