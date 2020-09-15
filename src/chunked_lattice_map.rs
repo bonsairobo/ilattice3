@@ -2,7 +2,7 @@ use crate::{
     bounding_extent, copy_extent,
     lattice_map::LatticeMapKeyValIterator,
     prelude::*,
-    vec_lattice_map::{FastCompressedVecLatticeMap, FastLz4},
+    vec_lattice_map::{FastLz4, FastLz4CompressedVecLatticeMap},
     Extent, Point, VecLatticeMap, YLevelsIndexer,
 };
 
@@ -46,7 +46,7 @@ impl<T, I> Chunk<T, (), I> {
 
 pub struct FastCompressedChunk<T, M, I> {
     pub metadata: M, // metadata doesn't get compressed, hope it's small!
-    pub compressed_map: FastCompressedVecLatticeMap<T, I>,
+    pub compressed_map: FastLz4CompressedVecLatticeMap<T, I>,
 }
 
 // PERF: cloning the metadata is unfortunate
