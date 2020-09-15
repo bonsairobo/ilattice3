@@ -129,7 +129,7 @@ where
 /// Call `PaletteLatticeMap::to_serializable` to get this type, which is an LZ4-compressed,
 /// serde-serializable type.
 #[derive(Deserialize, Serialize)]
-pub struct SerializablePaletteLatticeMap<T, P, M, I> {
+pub struct SerializablePaletteLatticeMap<T, P, M = (), I = YLevelsIndexer> {
     pub compressed_chunks: SerializableChunkedLatticeMap<P, M, I>,
     pub palette: Vec<T>,
 }
@@ -177,7 +177,7 @@ where
 
 /// A thread-local reader of a `PaletteLatticeMap` which stores a cache of chunks that were
 /// decompressed after missing the global cache of chunks.
-pub struct PaletteLatticeMapReader<'a, T, P, M, I>
+pub struct PaletteLatticeMapReader<'a, T, P, M = (), I = YLevelsIndexer>
 where
     P: Copy,
     M: Clone,
@@ -262,7 +262,7 @@ where
 }
 
 /// A borrowed chunk and palette.
-pub struct ChunkVoxelsRef<'a, T, P, I> {
+pub struct ChunkVoxelsRef<'a, T, P, I = YLevelsIndexer> {
     pub palette: &'a Vec<T>,
     pub map: &'a VecLatticeMap<P, I>,
 }
@@ -293,7 +293,7 @@ where
 }
 
 /// A mutably borrowed chunk and palette.
-pub struct ChunkVoxelsRefMut<'a, T, P, I> {
+pub struct ChunkVoxelsRefMut<'a, T, P, I = YLevelsIndexer> {
     pub palette: &'a mut Vec<T>,
     pub map: &'a mut VecLatticeMap<P, I>,
 }

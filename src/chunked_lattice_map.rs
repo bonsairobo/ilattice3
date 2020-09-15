@@ -44,7 +44,7 @@ impl<T, I> Chunk<T, (), I> {
     }
 }
 
-pub struct FastCompressedChunk<T, M, I> {
+pub struct FastCompressedChunk<T, M = (), I = YLevelsIndexer> {
     pub metadata: M, // metadata doesn't get compressed, hope it's small!
     pub compressed_map: FastLz4CompressedVecLatticeMap<T, I>,
 }
@@ -365,7 +365,7 @@ where
 /// Call `ChunkedLatticeMap::to_serializable` to get this type, which is an LZ4-compressed,
 /// serde-serializable type.
 #[derive(Deserialize, Serialize)]
-pub struct SerializableChunkedLatticeMap<T, M, I> {
+pub struct SerializableChunkedLatticeMap<T, M = (), I = YLevelsIndexer> {
     pub chunk_size: Point,
     pub compressed_chunks: FnvHashMap<Point, BincodeLz4Compressed<Chunk<T, M, I>>>,
 }
@@ -432,7 +432,7 @@ where
 
 /// A thread-local reader of a `ChunkedLatticeMap` which stores a cache of chunks that were
 /// decompressed after missing the global cache of chunks.
-pub struct ChunkedLatticeMapReader<'a, T, M, I>
+pub struct ChunkedLatticeMapReader<'a, T, M = (), I = YLevelsIndexer>
 where
     T: Copy,
     M: Clone,
