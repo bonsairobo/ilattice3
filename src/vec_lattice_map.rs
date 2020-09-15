@@ -227,6 +227,7 @@ where
         let volume = self.extent.volume();
 
         let mut decoder = lz4::Decoder::new(self.compressed_bytes.as_slice()).unwrap();
+        // Allocate the vector with element type T so the alignment is correct.
         let mut decompressed_values: Vec<T> = Vec::with_capacity(volume);
         unsafe { decompressed_values.set_len(volume) };
         let mut decompressed_slice = unsafe {
