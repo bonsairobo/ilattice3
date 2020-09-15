@@ -218,7 +218,7 @@ impl<T, I> FastLz4CompressedVecLatticeMap<T, I> {
 
 impl<T, I> Decompressible<FastLz4> for FastLz4CompressedVecLatticeMap<T, I>
 where
-    T: Copy, // this is important so we don't serialize a vector of non-POD type
+    T: Copy, // Copy is important so we don't serialize a vector of non-POD type
     I: Indexer,
 {
     type Decompressed = VecLatticeMap<T, I>;
@@ -244,7 +244,7 @@ where
 
 impl<T, I> Compressible<FastLz4> for VecLatticeMap<T, I>
 where
-    T: Copy, // this is important so we don't serialize a vector of non-POD type
+    T: Copy, // Copy is important so we don't serialize a vector of non-POD type
     I: Indexer,
 {
     type Compressed = FastLz4CompressedVecLatticeMap<T, I>;
@@ -298,7 +298,7 @@ impl<T, I> RleCompressedVecLatticeMap<T, I> {
 
 impl<T, I> Decompressible<NaiveRunLengthEncoding> for RleCompressedVecLatticeMap<T, I>
 where
-    T: Copy + PartialEq, // this is important so we don't serialize a vector of non-POD type
+    T: Copy + PartialEq, // Copy is important so we don't serialize a vector of non-POD type
     I: Indexer,
 {
     type Decompressed = VecLatticeMap<T, I>;
