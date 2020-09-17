@@ -67,6 +67,20 @@ impl<T, I: Indexer> VecLatticeMap<T, I> {
         }
     }
 
+    /// Creates an uninitialized internal `Vec`. Do not read without first writing out all of the
+    /// values.
+    pub unsafe fn uninitialized(extent: Extent) -> Self {
+        let volume = extent.volume();
+        let mut values = Vec::with_capacity(volume);
+        values.set_len(volume);
+
+        Self::new(extent, values)
+    }
+
+    pub fn into_parts(self: Self) -> (Vec<T>, Extent) {
+        (self.values, self.extent)
+    }
+
     /// Same as `Self::new`, but with minimum at the origin, and dimensions (or supremum) `sup`.
     pub fn new_at_origin(sup: Point, values: Vec<T>) -> Self {
         let extent = Extent::from_min_and_world_supremum([0, 0, 0].into(), sup);
@@ -118,15 +132,9 @@ impl<T: Clone, I: Indexer> VecLatticeMap<T, I> {
         debug_assert!(tfm.is_octahedral());
 
         let extent = self.get_extent();
-        let volume = extent.volume();
 
         let tfm_extent = tfm.apply_to_extent(&extent);
-
-        let mut new_values = Vec::with_capacity(volume);
-        unsafe {
-            new_values.set_len(volume);
-        }
-        let mut tfm_map = Self::new(tfm_extent, new_values);
+        let mut tfm_map = unsafe { Self::uninitialized(tfm_extent) };
 
         // PERF: this is not the most efficient, but it is very simple.
         for p in extent {

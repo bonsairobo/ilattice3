@@ -31,7 +31,7 @@ pub use extent::{
     bounding_extent, copy_extent, copy_extent_to_position, fill_extent, map_extent, Extent,
 };
 pub use fn_lattice_map::FnLatticeMap;
-pub use indexer::{PeriodicYLevelsIndexer, YLevelsIndexer};
+pub use indexer::{Indexer, PeriodicYLevelsIndexer, YLevelsIndexer};
 pub use palette_lattice_map::{
     ChunkVoxelsRef, ChunkVoxelsRefMut, GetPaletteAddress, LatticeVoxels, PaletteLatticeMap,
     PaletteLatticeMapReader,
