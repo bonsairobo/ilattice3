@@ -1,5 +1,7 @@
 # ilattice3: Voxel Structures
 
+**DEPRECATION NOTICE: ilattice3 is being superceded by [building-blocks](https://github.com/bonsairobo/building-blocks)**
+
 `ilattice3` provides many useful types and functions for dealing with voxel
 data. The core types are `Point`, `Extent`, and the various "lattice maps,"
 which allow storing (or generating), data at each point in a 3D integer lattice.
